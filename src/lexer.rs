@@ -12,10 +12,6 @@ fn split_str(s: &str) -> Vec<char> {
     s.chars().collect()
 }
 
-fn split_string(s: String) -> Vec<char> {
-    s.chars().collect()
-}
-
 pub fn tokenize(s: &str) -> Result<Vec<Token>, String> {
     let mut acm: Vec<Token> = vec![];
     let tokens = tokenize_main(split_str(s).as_slice(), &mut acm)?;
