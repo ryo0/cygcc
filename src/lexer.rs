@@ -12,14 +12,11 @@ fn split_string(s: &str) -> Vec<char> {
 
 pub fn tokenize(s: &str) -> Result<Vec<Token>, &str> {
     let mut acm: Vec<Token> = vec![];
-    let (tokens, _) = tokenize_main(split_string(s).as_slice(), &mut acm)?;
+    let tokens = tokenize_main(split_string(s).as_slice(), &mut acm)?;
     Ok(tokens)
 }
 
-fn tokenize_main<'a, 'b>(
-    s: &'a [char],
-    acm: &mut Vec<Token>,
-) -> Result<(Vec<Token>, &'a [char]), &'b str> {
+fn tokenize_main<'a, 'b>(s: &'a [char], acm: &mut Vec<Token>) -> Result<Vec<Token>, &'b str> {
     match s {
         [first, rest @ ..] => match first {
             '+' => {
@@ -41,6 +38,6 @@ fn tokenize_main<'a, 'b>(
             ' ' | '\n' => tokenize_main(rest, acm),
             _ => Err("error"),
         },
-        _ => Ok((acm.clone(), &[])),
+        _ => Ok(acm.clone()),
     }
 }
