@@ -4,6 +4,7 @@ pub enum Token {
     Minus,
     Asterisk,
     Slash,
+    NotEqual,
     Integer(i32),
 }
 
@@ -32,6 +33,10 @@ fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> Result<Vec<Token>, 
                 }
                 Err(err) => Err(err),
             }
+        }
+        ['!', '=', rest @ ..] => {
+            acm.push(Token::NotEqual);
+            tokenize_main(rest, acm)
         }
         [first, rest @ ..] => match first {
             '+' => {
@@ -75,11 +80,17 @@ fn get_num<'a>(s: &'a [char], acm: String) -> Result<(Token, &'a [char]), String
 
 #[test]
 fn tokenize_test() {
-    let result = tokenize("+ - * /").ok().unwrap();
+    let result = tokenize("+ - * / !=").ok().unwrap();
 
     assert_eq!(
         result,
-        vec![Token::Plus, Token::Minus, Token::Asterisk, Token::Slash]
+        vec![
+            Token::Plus,
+            Token::Minus,
+            Token::Asterisk,
+            Token::Slash,
+            Token::NotEqual
+        ]
     );
 
     let result = tokenize("100 + 1234 - 5555").ok().unwrap();
