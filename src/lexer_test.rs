@@ -1,6 +1,12 @@
 use crate::lexer::tokenize;
+use crate::lexer::Token;
 
 #[test]
 fn tokenize_test() {
-    println!("test result is {:?}", tokenize("+ - * /"));
+    let result = tokenize("+ - * /").ok().unwrap();
+
+    assert_eq!(
+        result,
+        vec![Token::Plus, Token::Minus, Token::Asterisk, Token::Slash]
+    )
 }
