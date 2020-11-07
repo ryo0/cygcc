@@ -1,5 +1,5 @@
 [package]
-name = "ryocc"
+name = "cygcc"
 version = "0.1.0"
 authors = ["ryo0 <nekonekosekai@gmail.com>"]
 edition = "2018"
