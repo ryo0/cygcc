@@ -5,6 +5,8 @@ pub enum Token {
     Asterisk,
     Slash,
     NotEqual,
+    LParen,
+    RParen,
     Integer(i32),
 }
 
@@ -49,6 +51,14 @@ fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> Result<Vec<Token>, 
             }
             '/' => {
                 acm.push(Token::Slash);
+                tokenize_main(rest, acm)
+            }
+            '(' => {
+                acm.push(Token::LParen);
+                tokenize_main(rest, acm)
+            }
+            ')' => {
+                acm.push(Token::RParen);
                 tokenize_main(rest, acm)
             }
             ' ' | '\n' => tokenize_main(rest, acm),
