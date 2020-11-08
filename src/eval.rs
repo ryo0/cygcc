@@ -37,4 +37,11 @@ fn parse_exp_test() {
         ),
         -91434
     );
+    assert_eq!(
+        get_result_from_string(
+            "-1 * 5 + -3* 5 + (-10 * 3 * -2 + (1 - 1* 1 - -1) * 5) + 6 -(1 + 4)"
+        ),
+        46
+    );
+    assert_eq!(get_result_from_string("10 / -(2*3 -1)"), -2);
 }

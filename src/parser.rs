@@ -61,10 +61,10 @@ pub fn parse_add(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
 fn parse_mul(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
     let mul_tokens: Vec<Token> = vec![Token::Asterisk, Token::Slash];
 
-    let (primary, rest) = parse_primary(tokens)?;
+    let (primary, rest) = parse_unary(tokens)?;
     match rest {
         [first, rest @ ..] if mul_tokens.contains(first) => {
-            let (right_primary, rest) = parse_primary(rest)?;
+            let (right_primary, rest) = parse_unary(rest)?;
             let primary = Exp::InfixExp {
                 left: Box::new(primary),
                 op: token_mapper(first.clone()),
@@ -86,6 +86,24 @@ fn parse_mul(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
             }
         }
         _ => Ok((primary, rest)),
+    }
+}
+
+fn parse_unary(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
+    match tokens {
+        [Token::Plus, rest @ ..] => parse_primary(rest),
+        [Token::Minus, rest @ ..] => {
+            let (p, rest) = parse_primary(rest)?;
+            Ok((
+                Exp::InfixExp {
+                    left: Box::new(Exp::Integer(0)),
+                    op: Op::Minus,
+                    right: Box::new(p),
+                },
+                rest,
+            ))
+        }
+        _ => parse_primary(tokens),
     }
 }
 
