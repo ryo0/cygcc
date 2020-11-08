@@ -22,6 +22,7 @@ pub fn tokenize(s: &str) -> Result<Vec<Token>, String> {
 
 fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> Result<Vec<Token>, String> {
     match s {
+        [' ', rest @ ..] | ['\n', rest @ ..] => tokenize_main(rest, acm),
         [first, _rest @ ..] if first.is_numeric() => {
             let get_num_result = get_num(s, String::new());
             match get_num_result {
@@ -36,35 +37,24 @@ fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> Result<Vec<Token>, 
             acm.push(Token::NotEqual);
             tokenize_main(rest, acm)
         }
-        [first, rest @ ..] => match first {
-            '+' => {
-                acm.push(Token::Plus);
-                tokenize_main(rest, acm)
-            }
-            '-' => {
-                acm.push(Token::Minus);
-                tokenize_main(rest, acm)
-            }
-            '*' => {
-                acm.push(Token::Asterisk);
-                tokenize_main(rest, acm)
-            }
-            '/' => {
-                acm.push(Token::Slash);
-                tokenize_main(rest, acm)
-            }
-            '(' => {
-                acm.push(Token::LParen);
-                tokenize_main(rest, acm)
-            }
-            ')' => {
-                acm.push(Token::RParen);
-                tokenize_main(rest, acm)
-            }
-            ' ' | '\n' => tokenize_main(rest, acm),
-            _ => Err(format!("invalid token error. token: {:?}", first)),
-        },
+        [first, rest @ ..] => {
+            let token = symbol_to_token_mapper(first.clone())?;
+            acm.push(token);
+            tokenize_main(rest, acm)
+        }
         _ => Ok(acm.clone()),
+    }
+}
+
+fn symbol_to_token_mapper(c: char) -> Result<Token, String> {
+    match c {
+        '+' => Ok(Token::Plus),
+        '-' => Ok(Token::Minus),
+        '*' => Ok(Token::Asterisk),
+        '/' => Ok(Token::Slash),
+        '(' => Ok(Token::LParen),
+        ')' => Ok(Token::RParen),
+        _ => Err("symbol_to_token_mapper error".to_string()),
     }
 }
 
