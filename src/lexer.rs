@@ -100,5 +100,20 @@ fn tokenize_test() {
             Token::Minus,
             Token::Integer(5555)
         ]
-    )
+    );
+
+    let result = tokenize("10!=2+2+2").ok().unwrap();
+
+    assert_eq!(
+        result,
+        vec![
+            Token::Integer(10),
+            Token::NotEqual,
+            Token::Integer(2),
+            Token::Plus,
+            Token::Integer(2),
+            Token::Plus,
+            Token::Integer(2)
+        ]
+    );
 }
