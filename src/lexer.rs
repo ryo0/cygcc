@@ -54,7 +54,7 @@ fn symbol_to_token_mapper(c: char) -> Result<Token, String> {
         '/' => Ok(Token::Slash),
         '(' => Ok(Token::LParen),
         ')' => Ok(Token::RParen),
-        _ => Err("symbol_to_token_mapper error".to_string()),
+        _ => Err(format!("symbol_to_token_mapper error: {}", c)),
     }
 }
 
