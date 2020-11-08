@@ -1,14 +1,14 @@
 use crate::lexer::{tokenize, Token};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-enum Op {
+pub enum Op {
     Plus,
     Minus,
     Asterisk,
     Slash,
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-enum Exp {
+pub enum Exp {
     Integer(i32),
     InfixExp {
         left: Box<Exp>,
@@ -27,7 +27,7 @@ fn token_mapper(token: Token) -> Op {
     }
 }
 
-fn parse_add(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
+pub fn parse_add(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
     let add_tokens: Vec<Token> = vec![Token::Plus, Token::Minus];
 
     let (mul, rest) = parse_mul(tokens)?;
