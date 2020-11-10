@@ -10,17 +10,19 @@ pub enum Token {
     Integer(i32),
 }
 
+type LexerResult = Result<Vec<Token>, String>;
+
 fn split_str(s: &str) -> Vec<char> {
     s.chars().collect()
 }
 
-pub fn tokenize(s: &str) -> Result<Vec<Token>, String> {
+pub fn tokenize(s: &str) -> LexerResult {
     let mut acm: Vec<Token> = vec![];
     let tokens = tokenize_main(split_str(s).as_slice(), &mut acm)?;
     Ok(tokens)
 }
 
-fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> Result<Vec<Token>, String> {
+fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> LexerResult {
     match s {
         [' ', rest @ ..] | ['\n', rest @ ..] => tokenize_main(rest, acm),
         [first, _rest @ ..] if first.is_numeric() => {

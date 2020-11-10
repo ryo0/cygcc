@@ -17,6 +17,8 @@ pub enum Exp {
     },
 }
 
+type ParseResult<'a> = Result<(Exp, &'a [Token]), String>;
+
 fn token_mapper(token: Token) -> Op {
     match token {
         Token::Plus => Op::Plus,
@@ -29,7 +31,7 @@ fn token_mapper(token: Token) -> Op {
 
 const add_tokens: &'static [Token] = &[Token::Plus, Token::Minus];
 
-pub fn parse_add(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
+pub fn parse_add<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     let (mul, rest) = parse_mul(tokens)?;
     match rest {
         [first, rest @ ..] if add_tokens.contains(first) => {
@@ -60,7 +62,7 @@ pub fn parse_add(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
 
 const mul_tokens: &'static [Token] = &[Token::Asterisk, Token::Slash];
 
-fn parse_mul(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
+fn parse_mul<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     let (primary, rest) = parse_unary(tokens)?;
     match rest {
         [first, rest @ ..] if mul_tokens.contains(first) => {
@@ -89,7 +91,7 @@ fn parse_mul(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
     }
 }
 
-fn parse_unary(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
+fn parse_unary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     match tokens {
         [Token::Plus, rest @ ..] => parse_primary(rest),
         [Token::Minus, rest @ ..] => {
@@ -107,7 +109,7 @@ fn parse_unary(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
     }
 }
 
-fn parse_primary(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
+fn parse_primary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     match tokens {
         [Token::LParen, rest @ ..] => {
             let (add, rest) = parse_add(rest)?;
