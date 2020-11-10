@@ -1,3 +1,7 @@
+mod codegen;
+mod eval;
+mod lexer;
+mod parser;
 use crate::codegen::code_gen;
 use crate::lexer::tokenize;
 use crate::parser::parse_add;
