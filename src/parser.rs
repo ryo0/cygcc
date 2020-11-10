@@ -23,6 +23,14 @@ fn box_exp(exp: Exp) -> Box<Exp> {
     Box::new(exp)
 }
 
+fn infix_exp(left: Exp, op: Op, right: Exp) -> Exp {
+    Exp::InfixExp {
+        left: box_exp(left),
+        op: op,
+        right: box_exp(right),
+    }
+}
+
 fn token_mapper(token: Token) -> Op {
     match token {
         Token::Plus => Op::Plus,
@@ -40,22 +48,11 @@ pub fn parse_add<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     match rest {
         [first, rest @ ..] if add_tokens.contains(first) => {
             let (right_mul, rest) = parse_mul(rest)?;
-            let mul = Exp::InfixExp {
-                left: box_exp(mul),
-                op: token_mapper(first.clone()),
-                right: box_exp(right_mul),
-            };
+            let mul = infix_exp(mul, token_mapper(first.clone()), right_mul);
             match rest {
                 [first, rest @ ..] if add_tokens.contains(first) => {
                     let (add, rest) = parse_add(rest)?;
-                    Ok((
-                        Exp::InfixExp {
-                            left: box_exp(mul),
-                            op: token_mapper(first.clone()),
-                            right: box_exp(add),
-                        },
-                        rest,
-                    ))
+                    Ok((infix_exp(mul, token_mapper(first.clone()), add), rest))
                 }
                 _ => Ok((mul, rest)),
             }
@@ -71,22 +68,11 @@ fn parse_mul<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     match rest {
         [first, rest @ ..] if mul_tokens.contains(first) => {
             let (right_primary, rest) = parse_unary(rest)?;
-            let primary = Exp::InfixExp {
-                left: box_exp(primary),
-                op: token_mapper(first.clone()),
-                right: box_exp(right_primary),
-            };
+            let primary = infix_exp(primary, token_mapper(first.clone()), right_primary);
             match rest {
                 [first, rest @ ..] if mul_tokens.contains(first) => {
                     let (mul, rest) = parse_mul(rest)?;
-                    Ok((
-                        Exp::InfixExp {
-                            left: box_exp(primary),
-                            op: token_mapper(first.clone()),
-                            right: box_exp(mul),
-                        },
-                        rest,
-                    ))
+                    Ok((infix_exp(primary, token_mapper(first.clone()), mul), rest))
                 }
                 _ => Ok((primary, rest)),
             }
@@ -100,14 +86,7 @@ fn parse_unary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
         [Token::Plus, rest @ ..] => parse_primary(rest),
         [Token::Minus, rest @ ..] => {
             let (p, rest) = parse_primary(rest)?;
-            Ok((
-                Exp::InfixExp {
-                    left: box_exp(Exp::Integer(0)),
-                    op: Op::Minus,
-                    right: box_exp(p),
-                },
-                rest,
-            ))
+            Ok((infix_exp(Exp::Integer(0), Op::Minus, p), rest))
         }
         _ => parse_primary(tokens),
     }
