@@ -112,7 +112,7 @@ fn parse_exp_test() {
     let (exp, _) = parse_add(tokens.as_slice()).ok().unwrap();
     println!("{:?}", exp);
 
-    let tokens = tokenize("- - 10");
+    let tokens = tokenize("1 + 2 * 3 * 2 + 4 * -5");
     let tokens = match tokens {
         Ok(result) => result,
         Err(err) => panic!(err),

@@ -48,5 +48,5 @@ fn parse_exp_test() {
     assert_eq!(get_result_from_string("-10+20"), 10);
     assert_eq!(get_result_from_string("- -10"), 10);
     assert_eq!(get_result_from_string("- - +10"), 10);
-    assert_eq!(get_result_from_string("1 + 2 * 3 / 2 + 4 * -5"), -16);
+    assert_eq!(get_result_from_string("1 + 2 * 3 * 2 + 4 * -5"), -7);
 }
