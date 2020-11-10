@@ -19,6 +19,10 @@ pub enum Exp {
 
 type ParseResult<'a> = Result<(Exp, &'a [Token]), String>;
 
+fn box_exp(exp: Exp) -> Box<Exp> {
+    Box::new(exp)
+}
+
 fn token_mapper(token: Token) -> Op {
     match token {
         Token::Plus => Op::Plus,
@@ -37,18 +41,18 @@ pub fn parse_add<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
         [first, rest @ ..] if add_tokens.contains(first) => {
             let (right_mul, rest) = parse_mul(rest)?;
             let mul = Exp::InfixExp {
-                left: Box::new(mul),
+                left: box_exp(mul),
                 op: token_mapper(first.clone()),
-                right: Box::new(right_mul),
+                right: box_exp(right_mul),
             };
             match rest {
                 [first, rest @ ..] if add_tokens.contains(first) => {
                     let (add, rest) = parse_add(rest)?;
                     Ok((
                         Exp::InfixExp {
-                            left: Box::new(mul),
+                            left: box_exp(mul),
                             op: token_mapper(first.clone()),
-                            right: Box::new(add),
+                            right: box_exp(add),
                         },
                         rest,
                     ))
@@ -68,18 +72,18 @@ fn parse_mul<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
         [first, rest @ ..] if mul_tokens.contains(first) => {
             let (right_primary, rest) = parse_unary(rest)?;
             let primary = Exp::InfixExp {
-                left: Box::new(primary),
+                left: box_exp(primary),
                 op: token_mapper(first.clone()),
-                right: Box::new(right_primary),
+                right: box_exp(right_primary),
             };
             match rest {
                 [first, rest @ ..] if mul_tokens.contains(first) => {
                     let (mul, rest) = parse_mul(rest)?;
                     Ok((
                         Exp::InfixExp {
-                            left: Box::new(primary),
+                            left: box_exp(primary),
                             op: token_mapper(first.clone()),
-                            right: Box::new(mul),
+                            right: box_exp(mul),
                         },
                         rest,
                     ))
@@ -98,9 +102,9 @@ fn parse_unary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
             let (p, rest) = parse_primary(rest)?;
             Ok((
                 Exp::InfixExp {
-                    left: Box::new(Exp::Integer(0)),
+                    left: box_exp(Exp::Integer(0)),
                     op: Op::Minus,
-                    right: Box::new(p),
+                    right: box_exp(p),
                 },
                 rest,
             ))
