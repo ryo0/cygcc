@@ -83,9 +83,9 @@ fn parse_mul<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
 
 fn parse_unary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     match tokens {
-        [Token::Plus, rest @ ..] => parse_primary(rest),
+        [Token::Plus, rest @ ..] => parse_unary(rest),
         [Token::Minus, rest @ ..] => {
-            let (p, rest) = parse_primary(rest)?;
+            let (p, rest) = parse_unary(rest)?;
             Ok((infix_exp(Exp::Integer(0), Op::Minus, p), rest))
         }
         _ => parse_primary(tokens),
@@ -110,5 +110,17 @@ fn parse_primary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
 fn parse_exp_test() {
     let tokens = tokenize("1+2*3+4+5*6").ok().unwrap();
     let (exp, _) = parse_add(tokens.as_slice()).ok().unwrap();
+    println!("{:?}", exp);
+
+    let tokens = tokenize("- - 10");
+    let tokens = match tokens {
+        Ok(result) => result,
+        Err(err) => panic!(err),
+    };
+    let exp = parse_add(tokens.as_slice());
+    let exp = match exp {
+        Ok(result) => result,
+        Err(err) => panic!(err),
+    };
     println!("{:?}", exp);
 }

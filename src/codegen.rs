@@ -6,6 +6,9 @@ pub fn code_gen(exp: Exp) {
         InfixExp { left, op, right } => {
             code_gen(*left);
             code_gen(*right);
+
+            println!("  pop rdi");
+            println!("  pop rax");
             match op {
                 Plus => {
                     println!("  add rax, rdi");
@@ -21,7 +24,7 @@ pub fn code_gen(exp: Exp) {
                     println!("  idiv rdi");
                 }
             }
-            println!("  imul rax, rdi");
+            println!("  push rax");
         }
         Integer(i) => {
             println!("  push {}", i);
