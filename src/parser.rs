@@ -27,9 +27,9 @@ fn token_mapper(token: Token) -> Op {
     }
 }
 
-pub fn parse_add(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
-    let add_tokens: Vec<Token> = vec![Token::Plus, Token::Minus];
+const add_tokens: &'static [Token] = &[Token::Plus, Token::Minus];
 
+pub fn parse_add(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
     let (mul, rest) = parse_mul(tokens)?;
     match rest {
         [first, rest @ ..] if add_tokens.contains(first) => {
@@ -58,9 +58,9 @@ pub fn parse_add(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
     }
 }
 
-fn parse_mul(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
-    let mul_tokens: Vec<Token> = vec![Token::Asterisk, Token::Slash];
+const mul_tokens: &'static [Token] = &[Token::Asterisk, Token::Slash];
 
+fn parse_mul(tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
     let (primary, rest) = parse_unary(tokens)?;
     match rest {
         [first, rest @ ..] if mul_tokens.contains(first) => {
