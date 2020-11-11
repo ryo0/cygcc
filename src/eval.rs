@@ -13,7 +13,7 @@ fn eval_exp(exp: Exp) -> i32 {
                 Op::Slash => left / right,
             }
         }
-        Exp::Integer(i) => i,
+        Exp::Int(i) => i,
     }
 }
 

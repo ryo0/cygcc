@@ -10,7 +10,7 @@ pub enum Token {
     LsEq,
     LParen,
     RParen,
-    Integer(i32),
+    Int(i32),
 }
 
 type LexerResult = Result<Vec<Token>, String>;
@@ -98,7 +98,7 @@ fn get_num<'a>(s: &'a [char], acm: String) -> Result<(Token, &'a [char]), String
             let num = acm.parse();
             match num {
                 Err(_) => Err(format!("数値の形式がおかしい。{}", acm)),
-                Ok(num) => Ok((Token::Integer(num), s)),
+                Ok(num) => Ok((Token::Int(num), s)),
             }
         }
     }
@@ -124,11 +124,11 @@ fn tokenize_test() {
     assert_eq!(
         result,
         vec![
-            Token::Integer(100),
+            Token::Int(100),
             Token::Plus,
-            Token::Integer(1234),
+            Token::Int(1234),
             Token::Minus,
-            Token::Integer(5555)
+            Token::Int(5555)
         ]
     );
 
@@ -137,15 +137,15 @@ fn tokenize_test() {
     assert_eq!(
         result,
         vec![
-            Token::Integer(10),
+            Token::Int(10),
             Token::NotEq,
-            Token::Integer(2),
+            Token::Int(2),
             Token::Plus,
-            Token::Integer(2),
+            Token::Int(2),
             Token::Plus,
-            Token::Integer(2),
+            Token::Int(2),
             Token::Eq,
-            Token::Integer(6),
+            Token::Int(6),
         ]
     );
 }

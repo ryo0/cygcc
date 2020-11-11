@@ -9,7 +9,7 @@ pub enum Op {
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Exp {
-    Integer(i32),
+    Int(i32),
     InfixExp {
         left: Box<Exp>,
         op: Op,
@@ -86,7 +86,7 @@ fn parse_unary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
         [Token::Plus, rest @ ..] => parse_unary(rest),
         [Token::Minus, rest @ ..] => {
             let (p, rest) = parse_unary(rest)?;
-            Ok((infix_exp(Exp::Integer(0), Op::Minus, p), rest))
+            Ok((infix_exp(Exp::Int(0), Op::Minus, p), rest))
         }
         _ => parse_primary(tokens),
     }
@@ -101,7 +101,7 @@ fn parse_primary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
                 _ => Err(format!("カッコが閉じていない: {:?}", tokens)),
             }
         }
-        [Token::Integer(i), rest @ ..] => Ok((Exp::Integer(*i), rest)),
+        [Token::Int(i), rest @ ..] => Ok((Exp::Int(*i), rest)),
         _ => Err(format!("unexpected token: {:?}", tokens)),
     }
 }
