@@ -23,7 +23,36 @@ pub fn code_gen(exp: Exp) {
                     println!("  cqo");
                     println!("  idiv rdi");
                 }
-                _ => panic!("未対応"),
+                Eq => {
+                    println!("  cmp rax, rdi");
+                    println!("  sete al");
+                    println!("  movzb rax, al");
+                }
+                NotEq => {
+                    println!("  cmp rax, rdi");
+                    println!("  setne al");
+                    println!("  movzb rax, al");
+                }
+                Ls => {
+                    println!("  cmp rax, rdi");
+                    println!("  setl al");
+                    println!("  movzb rax, al");
+                }
+                LsEq => {
+                    println!("  cmp rax, rdi");
+                    println!("  setle al");
+                    println!("  movzb rax, al");
+                }
+                Gr => {
+                    println!("  cmp rdi, rax");
+                    println!("  setl al");
+                    println!("  movzb rax, al");
+                }
+                GrEq => {
+                    println!("  cmp rdi, rax");
+                    println!("  setle al");
+                    println!("  movzb rax, al");
+                }
             }
             println!("  push rax");
         }
