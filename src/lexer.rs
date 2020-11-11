@@ -4,7 +4,10 @@ pub enum Token {
     Minus,
     Asterisk,
     Slash,
-    NotEqual,
+    Eq,
+    NotEq,
+    GrEq,
+    LsEq,
     LParen,
     RParen,
     Integer(i32),
@@ -35,8 +38,8 @@ fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> LexerResult {
                 Err(err) => Err(err),
             }
         }
-        ['!', '=', rest @ ..] => {
-            acm.push(Token::NotEqual);
+        [first, second, rest @ ..] if two_char_is_two_symbol(*first, *second) => {
+            acm.push(two_char_to_token_mapper(*first, *second));
             tokenize_main(rest, acm)
         }
         [first, rest @ ..] => {
@@ -45,6 +48,31 @@ fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> LexerResult {
             tokenize_main(rest, acm)
         }
         _ => Ok(acm.clone()),
+    }
+}
+
+fn two_char_is_two_symbol(first: char, second: char) -> bool {
+    two_symbol(concat_two_char(first, second))
+}
+
+fn two_symbol(string: String) -> bool {
+    let two_symbol_list: &[String] = &["==".to_string(), "!=".to_string()];
+    two_symbol_list.contains(&string)
+}
+
+fn concat_two_char(first: char, second: char) -> String {
+    format!("{}{}", first, second)
+}
+
+fn two_char_to_token_mapper(first: char, second: char) -> Token {
+    two_symbol_to_token_mapper(&concat_two_char(first, second))
+}
+
+fn two_symbol_to_token_mapper(string: &str) -> Token {
+    match string {
+        "==" => Token::Eq,
+        "!=" => Token::NotEq,
+        _ => panic!(format!("unexpected two symbol {}", string)),
     }
 }
 
@@ -87,7 +115,7 @@ fn tokenize_test() {
             Token::Minus,
             Token::Asterisk,
             Token::Slash,
-            Token::NotEqual
+            Token::NotEq
         ]
     );
 
@@ -104,18 +132,20 @@ fn tokenize_test() {
         ]
     );
 
-    let result = tokenize("10!=2+2+2").ok().unwrap();
+    let result = tokenize("10!=2+2+2==6").ok().unwrap();
 
     assert_eq!(
         result,
         vec![
             Token::Integer(10),
-            Token::NotEqual,
+            Token::NotEq,
             Token::Integer(2),
             Token::Plus,
             Token::Integer(2),
             Token::Plus,
-            Token::Integer(2)
+            Token::Integer(2),
+            Token::Eq,
+            Token::Integer(6),
         ]
     );
 }
