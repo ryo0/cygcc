@@ -46,9 +46,9 @@ fn token_mapper(token: Token) -> Op {
         Token::Eq => Op::Eq,
         Token::NotEq => Op::NotEq,
         Token::Ls => Op::Ls,
-        Token::Gr => Op::Ls,
+        Token::Gr => Op::Gr,
         Token::LsEq => Op::LsEq,
-        Token::GrEq => Op::LsEq,
+        Token::GrEq => Op::GrEq,
         _ => panic!("token_mapper error"),
     }
 }
