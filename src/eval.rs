@@ -1,5 +1,5 @@
 use crate::lexer::tokenize;
-use crate::parser::{parse_add, Exp, Op};
+use crate::parser::{parse_exp, Exp, Op};
 
 fn eval_exp(exp: Exp) -> i32 {
     match exp {
@@ -11,6 +11,7 @@ fn eval_exp(exp: Exp) -> i32 {
                 Op::Minus => left - right,
                 Op::Asterisk => left * right,
                 Op::Slash => left / right,
+                _ => panic!("未対応"),
             }
         }
         Exp::Int(i) => i,
@@ -19,7 +20,7 @@ fn eval_exp(exp: Exp) -> i32 {
 
 fn get_result_from_string(str: &str) -> i32 {
     let tokens = tokenize(str).ok().unwrap();
-    let (exp, _) = parse_add(tokens.as_slice()).ok().unwrap();
+    let (exp, _) = parse_exp(tokens.as_slice()).ok().unwrap();
     eval_exp(exp)
 }
 

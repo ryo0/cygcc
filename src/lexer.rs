@@ -6,6 +6,8 @@ pub enum Token {
     Slash,
     Eq,
     NotEq,
+    Gr,
+    Ls,
     GrEq,
     LsEq,
     LParen,
@@ -56,7 +58,12 @@ fn two_char_is_two_symbol(first: char, second: char) -> bool {
 }
 
 fn two_symbol(string: String) -> bool {
-    let two_symbol_list: &[String] = &["==".to_string(), "!=".to_string()];
+    let two_symbol_list: &[String] = &[
+        "==".to_string(),
+        "!=".to_string(),
+        "<=".to_string(),
+        ">=".to_string(),
+    ];
     two_symbol_list.contains(&string)
 }
 
@@ -72,6 +79,8 @@ fn two_symbol_to_token_mapper(string: &str) -> Token {
     match string {
         "==" => Token::Eq,
         "!=" => Token::NotEq,
+        "<=" => Token::LsEq,
+        ">=" => Token::GrEq,
         _ => panic!(format!("unexpected two symbol {}", string)),
     }
 }
@@ -84,6 +93,8 @@ fn symbol_to_token_mapper(c: char) -> Result<Token, String> {
         '/' => Ok(Token::Slash),
         '(' => Ok(Token::LParen),
         ')' => Ok(Token::RParen),
+        '<' => Ok(Token::Ls),
+        '>' => Ok(Token::Gr),
         _ => Err(format!("symbol_to_token_mapper error: {}", c)),
     }
 }

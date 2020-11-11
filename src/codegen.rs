@@ -23,10 +23,11 @@ pub fn code_gen(exp: Exp) {
                     println!("  cqo");
                     println!("  idiv rdi");
                 }
+                _ => panic!("未対応"),
             }
             println!("  push rax");
         }
-        Integer(i) => {
+        Int(i) => {
             println!("  push {}", i);
         }
     }

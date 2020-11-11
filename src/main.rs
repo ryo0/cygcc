@@ -4,7 +4,7 @@ mod lexer;
 mod parser;
 use crate::codegen::code_gen;
 use crate::lexer::tokenize;
-use crate::parser::parse_add;
+use crate::parser::parse_exp;
 use std::env;
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -16,7 +16,7 @@ fn main() {
         Err(err) => panic!(err),
     };
 
-    let parse_result = parse_add(tokens.as_slice());
+    let parse_result = parse_exp(tokens.as_slice());
     let exp = match parse_result {
         Ok((exp, _)) => exp,
         Err(err) => panic!(err),
