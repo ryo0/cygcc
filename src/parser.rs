@@ -29,7 +29,7 @@ pub enum Stmt {
     Exp(Exp),
 }
 
-type Program = Vec<Stmt>;
+pub type Program = Vec<Stmt>;
 
 type ParseExpResult<'a> = Result<(Exp, &'a [Token]), String>;
 
