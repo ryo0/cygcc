@@ -7,6 +7,21 @@ use std::collections::HashMap;
 
 const LOCAL_VAR_OFFSET: i32 = 8;
 
+pub fn start_to_gen_code(p: Program) {
+    println!(".intel_syntax noprefix");
+    println!(".globl main");
+    println!("main:");
+
+    println!("  push rbp");
+    println!("  mov rbp, rsp");
+    println!("  sub rsp, 208");
+
+    code_gen(p);
+    println!("  mov rsp, rbp");
+    println!("  pop rbp");
+    println!("  ret");
+}
+
 pub fn code_gen(p: Program) {
     let mut offset_struct = Offset {
         map: HashMap::new(),
@@ -16,16 +31,17 @@ pub fn code_gen(p: Program) {
         match stmt {
             Stmt::Exp(exp) => {
                 code_gen_exp(exp, &mut offset_struct);
+                println!("  pop rax");
             }
         }
     }
 }
 
-// fn code_gen_left_val(exp: Exp, offset: &mut Offset) {
-//     match exp {
-
-//     }
-// }
+fn code_gen_var(var_name: String, offset: &mut Offset) {
+    println!("  mov rax, rbp");
+    println!("  sub rax, {}", offset.get_offset(var_name));
+    println!("  push rax");
+}
 
 pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
     match exp {
@@ -79,14 +95,24 @@ pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
                     println!("  setle al");
                     println!("  movzb rax, al");
                 }
-                _ => panic!("未対応"),
+                Assign => {
+                    println!("  pop rdi");
+                    println!("  pop rax");
+                    println!("  mov [rax], rdi");
+                    println!("  push rdi"); // 代入の結果である右辺値をスタックに残しておきたいためこうする
+                }
             }
             println!("  push rax");
         }
         Int(i) => {
             println!("  push {}", i);
         }
-        Var(v) => println!("offset is {}", offset_struct.get_offset(v)),
+        Var(v) => {
+            code_gen_var(v, offset_struct);
+            println!("  pop rax");
+            println!("  mov rax, [rax]");
+            println!("  push rax");
+        }
     }
 }
 

@@ -2,7 +2,7 @@ mod codegen;
 mod eval;
 mod lexer;
 mod parser;
-use crate::codegen::code_gen;
+use crate::codegen::start_to_gen_code;
 use crate::lexer::tokenize;
 use crate::parser::parse_program;
 use std::env;
@@ -21,11 +21,5 @@ fn main() {
         Ok(stmts) => stmts,
         Err(err) => panic!(err),
     };
-
-    println!(".intel_syntax noprefix");
-    println!(".globl main");
-    println!("main:");
-    code_gen(stmts);
-    println!("  pop rax");
-    println!("  ret");
+    start_to_gen_code(stmts);
 }
