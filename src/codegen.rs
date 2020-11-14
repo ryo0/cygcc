@@ -59,5 +59,6 @@ pub fn code_gen(exp: Exp) {
         Int(i) => {
             println!("  push {}", i);
         }
+        _ => panic!("未対応"),
     }
 }

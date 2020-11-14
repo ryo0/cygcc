@@ -13,6 +13,7 @@ pub enum Token {
     LParen,
     RParen,
     Int(i32),
+    Var(String),
 }
 
 type LexerResult = Result<Vec<Token>, String>;
@@ -35,6 +36,16 @@ fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> LexerResult {
             match get_num_result {
                 Ok((num, rest)) => {
                     acm.push(num);
+                    tokenize_main(rest, acm)
+                }
+                Err(err) => Err(err),
+            }
+        }
+        [first, _rest @ ..] if first.is_alphabetic() => {
+            let get_var_result = get_var(s, String::new());
+            match get_var_result {
+                Ok((var, rest)) => {
+                    acm.push(var);
                     tokenize_main(rest, acm)
                 }
                 Err(err) => Err(err),
@@ -110,6 +121,22 @@ fn get_num<'a>(s: &'a [char], acm: String) -> Result<(Token, &'a [char]), String
             match num {
                 Err(_) => Err(format!("数値の形式がおかしい。{}", acm)),
                 Ok(num) => Ok((Token::Int(num), s)),
+            }
+        }
+    }
+}
+
+fn get_var<'a>(s: &'a [char], acm: String) -> Result<(Token, &'a [char]), String> {
+    match s {
+        [first, rest @ ..] if first.is_alphabetic() => {
+            let acm = format!("{}{}", acm, first);
+            get_var(rest, acm)
+        }
+        _ => {
+            let var = acm.parse();
+            match var {
+                Err(_) => Err(format!("変数の形式がおかしい: {}", acm)),
+                Ok(var) => Ok((Token::Var(var), s)),
             }
         }
     }

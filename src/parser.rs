@@ -16,6 +16,7 @@ pub enum Op {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Exp {
     Int(i32),
+    Var(String),
     InfixExp {
         left: Box<Exp>,
         op: Op,
@@ -161,25 +162,27 @@ fn parse_primary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
             }
         }
         [Token::Int(i), rest @ ..] => Ok((Exp::Int(*i), rest)),
+        [Token::Var(v), rest @ ..] => Ok((Exp::Var(v.clone()), rest)),
         _ => Err(format!("unexpected token: {:?}", tokens)),
     }
 }
 
-#[test]
-fn parse_exp_test() {
-    let tokens = tokenize("1+2*3+4+5*6").ok().unwrap();
-    let (exp, _) = parse_add(tokens.as_slice()).ok().unwrap();
-    println!("{:?}", exp);
-
-    let tokens = tokenize("1 + 2 * 3 * 2 + 4 * -5");
+fn parse_for_test(str: &str) {
+    let tokens = tokenize(str);
     let tokens = match tokens {
         Ok(result) => result,
         Err(err) => panic!(err),
     };
-    let exp = parse_add(tokens.as_slice());
+    let exp = parse_exp(tokens.as_slice());
     let exp = match exp {
         Ok(result) => result,
         Err(err) => panic!(err),
     };
     println!("{:?}", exp);
+}
+#[test]
+fn parse_exp_test() {
+    parse_for_test("1+2*3+4+5*6");
+    parse_for_test("1 + 2 * 3 * 2 + 4 * -5");
+    parse_for_test("abc + def");
 }

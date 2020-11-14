@@ -4,6 +4,7 @@ use crate::parser::{parse_exp, Exp, Op};
 enum Val {
     Int(i32),
     B(bool),
+    Var(String),
 }
 
 fn eval_exp(exp: Exp) -> Val {
@@ -29,6 +30,7 @@ fn eval_exp(exp: Exp) -> Val {
             }
         }
         Exp::Int(i) => Val::Int(i),
+        Exp::Var(v) => Val::Var(v),
     }
 }
 
