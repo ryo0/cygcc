@@ -17,6 +17,7 @@ pub fn start_to_gen_code(p: Program) {
     println!("  sub rsp, 208");
 
     code_gen(p);
+
     println!("  mov rsp, rbp");
     println!("  pop rbp");
     println!("  ret");
@@ -42,23 +43,26 @@ fn code_gen_var(var_name: String, offset: &mut Offset) {
     println!("  push rax");
 }
 
+fn code_gen_assign(left: Exp, right: Exp, offset_struct: &mut Offset) {
+    match left {
+        Var(var) => {
+            code_gen_var(var.clone(), offset_struct);
+        }
+        _ => panic!(format!("左辺値error: {:?}", left)),
+    }
+    code_gen_exp(right, offset_struct);
+
+    println!("  pop rdi");
+    println!("  pop rax");
+    println!("  mov [rax], rdi");
+    println!("  push rdi"); // 代入の結果である右辺値をスタックに残しておきたいためこうする
+}
 pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
     match exp {
         InfixExp { left, op, right } => {
             match op {
                 Assign => {
-                    match *left {
-                        Var(var) => {
-                            code_gen_var(var.clone(), offset_struct);
-                        }
-                        _ => panic!(format!("左辺値error: {:?}", left)),
-                    }
-                    code_gen_exp(*right.clone(), offset_struct);
-
-                    println!("  pop rdi");
-                    println!("  pop rax");
-                    println!("  mov [rax], rdi");
-                    println!("  push rdi"); // 代入の結果である右辺値をスタックに残しておきたいためこうする
+                    code_gen_assign(*left.clone(), *right.clone(), offset_struct);
                     return;
                 }
                 _ => {}
