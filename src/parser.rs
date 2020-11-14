@@ -70,15 +70,15 @@ fn parse_assign<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     }
 }
 
-const equality_tokens: &'static [Token] = &[Token::Eq, Token::NotEq];
+const EQUALITY_TOKENS: &'static [Token] = &[Token::Eq, Token::NotEq];
 fn parse_equality<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     let (relational, rest) = parse_relational(tokens)?;
     match rest {
-        [first, rest @ ..] if equality_tokens.contains(first) => {
+        [first, rest @ ..] if EQUALITY_TOKENS.contains(first) => {
             let (right_relational, rest) = parse_relational(rest)?;
             let relational = infix_exp(relational, token_mapper(first.clone()), right_relational);
             match rest {
-                [first, rest @ ..] if equality_tokens.contains(first) => {
+                [first, rest @ ..] if EQUALITY_TOKENS.contains(first) => {
                     let (equality, rest) = parse_equality(rest)?;
                     Ok((
                         infix_exp(relational, token_mapper(first.clone()), equality),
@@ -92,15 +92,15 @@ fn parse_equality<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     }
 }
 
-const relational_tokens: &'static [Token] = &[Token::Ls, Token::LsEq, Token::Gr, Token::GrEq];
+const RELATIONAL_TOKENS: &'static [Token] = &[Token::Ls, Token::LsEq, Token::Gr, Token::GrEq];
 fn parse_relational<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     let (add, rest) = parse_add(tokens)?;
     match rest {
-        [first, rest @ ..] if relational_tokens.contains(first) => {
+        [first, rest @ ..] if RELATIONAL_TOKENS.contains(first) => {
             let (right_add, rest) = parse_add(rest)?;
             let add = infix_exp(add, token_mapper(first.clone()), right_add);
             match rest {
-                [first, rest @ ..] if relational_tokens.contains(first) => {
+                [first, rest @ ..] if RELATIONAL_TOKENS.contains(first) => {
                     let (relational, rest) = parse_relational(rest)?;
                     Ok((
                         infix_exp(add, token_mapper(first.clone()), relational),
@@ -114,15 +114,15 @@ fn parse_relational<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     }
 }
 
-const add_tokens: &'static [Token] = &[Token::Plus, Token::Minus];
+const ADD_TOKENS: &'static [Token] = &[Token::Plus, Token::Minus];
 fn parse_add<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     let (mul, rest) = parse_mul(tokens)?;
     match rest {
-        [first, rest @ ..] if add_tokens.contains(first) => {
+        [first, rest @ ..] if ADD_TOKENS.contains(first) => {
             let (right_mul, rest) = parse_mul(rest)?;
             let mul = infix_exp(mul, token_mapper(first.clone()), right_mul);
             match rest {
-                [first, rest @ ..] if add_tokens.contains(first) => {
+                [first, rest @ ..] if ADD_TOKENS.contains(first) => {
                     let (add, rest) = parse_add(rest)?;
                     Ok((infix_exp(mul, token_mapper(first.clone()), add), rest))
                 }
@@ -133,16 +133,16 @@ fn parse_add<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     }
 }
 
-const mul_tokens: &'static [Token] = &[Token::Asterisk, Token::Slash];
+const MUL_TOKENS: &'static [Token] = &[Token::Asterisk, Token::Slash];
 
 fn parse_mul<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     let (primary, rest) = parse_unary(tokens)?;
     match rest {
-        [first, rest @ ..] if mul_tokens.contains(first) => {
+        [first, rest @ ..] if MUL_TOKENS.contains(first) => {
             let (right_primary, rest) = parse_unary(rest)?;
             let primary = infix_exp(primary, token_mapper(first.clone()), right_primary);
             match rest {
-                [first, rest @ ..] if mul_tokens.contains(first) => {
+                [first, rest @ ..] if MUL_TOKENS.contains(first) => {
                     let (mul, rest) = parse_mul(rest)?;
                     Ok((infix_exp(primary, token_mapper(first.clone()), mul), rest))
                 }
