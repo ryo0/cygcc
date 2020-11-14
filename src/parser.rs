@@ -12,6 +12,7 @@ pub enum Op {
     LsEq,
     Gr,
     GrEq,
+    Assign,
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Exp {
@@ -55,7 +56,18 @@ fn token_mapper(token: Token) -> Op {
 }
 
 pub fn parse_exp<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
-    parse_equality(tokens)
+    parse_assign(tokens)
+}
+
+fn parse_assign<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+    let (equality, rest) = parse_equality(tokens)?;
+    match rest {
+        [Token::Assign, rest @ ..] => {
+            let (assign, rest) = parse_assign(rest)?;
+            Ok((infix_exp(equality, Op::Assign, assign), rest))
+        }
+        _ => Ok((equality, rest)),
+    }
 }
 
 const equality_tokens: &'static [Token] = &[Token::Eq, Token::NotEq];
@@ -185,4 +197,5 @@ fn parse_exp_test() {
     parse_for_test("1+2*3+4+5*6");
     parse_for_test("1 + 2 * 3 * 2 + 4 * -5");
     parse_for_test("abc + def");
+    parse_for_test("a = b = 1 + 2");
 }

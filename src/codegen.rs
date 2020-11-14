@@ -53,6 +53,7 @@ pub fn code_gen(exp: Exp) {
                     println!("  setle al");
                     println!("  movzb rax, al");
                 }
+                _ => panic!("未対応"),
             }
             println!("  push rax");
         }

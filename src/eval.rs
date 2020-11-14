@@ -27,6 +27,7 @@ fn eval_exp(exp: Exp) -> Val {
                 Op::Gr => Val::B(left > right),
                 Op::LsEq => Val::B(left <= right),
                 Op::GrEq => Val::B(left >= right),
+                _ => panic!("未対応"),
             }
         }
         Exp::Int(i) => Val::Int(i),

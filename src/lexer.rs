@@ -6,6 +6,7 @@ pub enum Token {
     Slash,
     Eq,
     NotEq,
+    Assign,
     Gr,
     Ls,
     GrEq,
@@ -106,6 +107,7 @@ fn symbol_to_token_mapper(c: char) -> Result<Token, String> {
         ')' => Ok(Token::RParen),
         '<' => Ok(Token::Ls),
         '>' => Ok(Token::Gr),
+        '=' => Ok(Token::Assign),
         _ => Err(format!("symbol_to_token_mapper error: {}", c)),
     }
 }
