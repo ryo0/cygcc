@@ -20,6 +20,13 @@ pub fn code_gen(p: Program) {
         }
     }
 }
+
+// fn code_gen_left_val(exp: Exp, offset: &mut Offset) {
+//     match exp {
+
+//     }
+// }
+
 pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
     match exp {
         InfixExp { left, op, right } => {
@@ -79,7 +86,7 @@ pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
         Int(i) => {
             println!("  push {}", i);
         }
-        Var(v) => println!("offset is {}", get_offset(v, offset_struct)),
+        Var(v) => println!("offset is {}", offset_struct.get_offset(v)),
     }
 }
 
@@ -88,19 +95,20 @@ pub struct Offset {
     max: i32,
 }
 
-fn get_offset(str: String, offset: &mut Offset) -> i32 {
-    if let Some(max) = offset.map.get(&str) {
-        return *max;
+impl Offset {
+    fn get_offset(&mut self, str: String) -> i32 {
+        if let Some(max) = self.map.get(&str) {
+            return *max;
+        }
+        let before_max = self.max;
+        self.max += LOCAL_VAR_OFFSET;
+        self.map.insert(str, before_max);
+        before_max
     }
-    let before_max = offset.max;
-    offset.max += LOCAL_VAR_OFFSET;
-    offset.map.insert(str, before_max);
-    before_max
-}
-
-fn reset_offset(offset: &mut Offset) {
-    offset.map = HashMap::new();
-    offset.max = 0;
+    fn reset_offset(&mut self) {
+        self.map = HashMap::new();
+        self.max = 0;
+    }
 }
 
 #[test]
@@ -109,25 +117,25 @@ fn test_map() {
         map: HashMap::new(),
         max: 0,
     };
-    let offset = get_offset("a".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("a".to_string());
     assert_eq!(offset, 0);
-    let offset = get_offset("a".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("a".to_string());
     assert_eq!(offset, 0);
-    let offset = get_offset("b".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("b".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET);
-    let offset = get_offset("c".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("c".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * 2);
-    let offset = get_offset("d".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("d".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
-    let offset = get_offset("d".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("d".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
-    reset_offset(&mut offset_struct);
-    let offset = get_offset("d".to_string(), &mut offset_struct);
+    offset_struct.reset_offset();
+    let offset = offset_struct.get_offset("d".to_string());
     assert_eq!(offset, 0);
-    let offset = get_offset("d".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("d".to_string());
     assert_eq!(offset, 0);
-    let offset = get_offset("a".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET);
-    let offset = get_offset("a".to_string(), &mut offset_struct);
+    let offset = offset_struct.get_offset("a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET);
 }
