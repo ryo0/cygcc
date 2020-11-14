@@ -59,4 +59,5 @@ assert 8 'a = 3; z = 5; a + z;'
 assert 8 'foo=3; bar = 5; foo+bar;' 
 assert 15 'foo= bar = hoge = 5; foo+bar+hoge;' 
 assert 8 'foo= bar = 2; 3*foo+bar;' 
+assert 21 'a = 3; foo= bar = hoge = a * 2; foo + bar + hoge + a;' 
 echo OK
