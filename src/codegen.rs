@@ -98,6 +98,11 @@ fn get_offset(str: String, offset: &mut Offset) -> i32 {
     before_max
 }
 
+fn reset_offset(offset: &mut Offset) {
+    offset.map = HashMap::new();
+    offset.max = 0;
+}
+
 #[test]
 fn test_map() {
     let mut offset_struct = Offset {
@@ -116,4 +121,13 @@ fn test_map() {
     assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
     let offset = get_offset("d".to_string(), &mut offset_struct);
     assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
+    reset_offset(&mut offset_struct);
+    let offset = get_offset("d".to_string(), &mut offset_struct);
+    assert_eq!(offset, 0);
+    let offset = get_offset("d".to_string(), &mut offset_struct);
+    assert_eq!(offset, 0);
+    let offset = get_offset("a".to_string(), &mut offset_struct);
+    assert_eq!(offset, LOCAL_VAR_OFFSET);
+    let offset = get_offset("a".to_string(), &mut offset_struct);
+    assert_eq!(offset, LOCAL_VAR_OFFSET);
 }
