@@ -62,19 +62,21 @@ fn token_mapper(token: Token) -> Op {
 }
 
 pub fn parse_program(tokens: &[Token]) -> Result<Program, String> {
-    let mut stmt_vec: Vec<Stmt> = vec![];
-    let mut tokens = tokens;
-    while !tokens.is_empty() {
+    fn parse_program_sub(tokens: &[Token], acm: Vec<Stmt>) -> Result<Program, String> {
         let stmt_result = parse_stmt(tokens);
         match stmt_result {
             Ok((stmt, rest)) => {
-                tokens = rest;
-                stmt_vec.push(stmt);
+                let stmt_vec = vec![stmt];
+                let acm = [acm, stmt_vec].concat();
+                if rest.is_empty() {
+                    return Ok(acm);
+                }
+                parse_program_sub(rest, acm)
             }
             Err(err) => return Err(err),
         }
     }
-    return Ok(stmt_vec);
+    parse_program_sub(tokens, vec![])
 }
 
 pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
