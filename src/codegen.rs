@@ -79,7 +79,42 @@ pub fn code_gen(exp: Exp) {
             Int(i) => {
                 println!("  push {}", i);
             }
-            _ => panic!("未対応"),
+            Var(v) => {}
         }
     }
+}
+
+struct Offset {
+    map: HashMap<String, i32>,
+    max: i32,
+}
+
+fn offset_func_space(str: String, offset: &mut Offset) -> i32 {
+    if let Some(max) = offset.map.get(&str) {
+        return *max;
+    }
+    let before_max = offset.max;
+    offset.max += LOCAL_VAR_OFFSET;
+    offset.map.insert(str, before_max);
+    before_max
+}
+
+#[test]
+fn test_map() {
+    let mut offsetStruct = Offset {
+        map: HashMap::new(),
+        max: 0,
+    };
+    let offset = offset_func_space("a".to_string(), &mut offsetStruct);
+    assert_eq!(offset, 0);
+    let offset = offset_func_space("a".to_string(), &mut offsetStruct);
+    assert_eq!(offset, 0);
+    let offset = offset_func_space("b".to_string(), &mut offsetStruct);
+    assert_eq!(offset, LOCAL_VAR_OFFSET);
+    let offset = offset_func_space("c".to_string(), &mut offsetStruct);
+    assert_eq!(offset, LOCAL_VAR_OFFSET * 2);
+    let offset = offset_func_space("d".to_string(), &mut offsetStruct);
+    assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
+    let offset = offset_func_space("d".to_string(), &mut offsetStruct);
+    assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
 }
