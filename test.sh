@@ -55,6 +55,7 @@ assert 0 '1 < 1;'
 assert 1 '1 <= 1;' 
 
 assert 3 'a = 3; a;'  
+assert 4 'a = b = 2; a + b;'  
 assert 8 'a = 3; z = 5; a + z;'  
 assert 8 'foo=3; bar = 5; foo+bar;' 
 assert 15 'foo= bar = hoge = 5; foo+bar+hoge;' 
