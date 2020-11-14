@@ -7,17 +7,15 @@ const LOCAL_VAR_OFFSET: i32 = 8;
 pub fn code_gen(exp: Exp) {
     let mut local_var_offset_counter = 0;
     let mut var_offset_map: HashMap<String, i32> = HashMap::new();
-    let mut add_offset_map = |str: String, var_offset_map: &mut HashMap<String, i32>| {
+    let mut add_offset_map = |str: String, var_offset_map: &mut HashMap<String, i32>| -> i32 {
         var_offset_map.insert(str.clone(), local_var_offset_counter);
         local_var_offset_counter += LOCAL_VAR_OFFSET;
+        local_var_offset_counter
     };
     let get_offset = |str: String, counter: i32| -> i32 {
         let result = var_offset_map.get(&str);
         match result {
-            None => {
-                add_offset_map(str, &mut var_offset_map);
-                counter
-            }
+            None => add_offset_map(str, &mut var_offset_map),
             Some(r) => *r,
         }
     };
