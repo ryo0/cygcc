@@ -101,20 +101,20 @@ fn offset_func_space(str: String, offset: &mut Offset) -> i32 {
 
 #[test]
 fn test_map() {
-    let mut offsetStruct = Offset {
+    let mut offset_struct = Offset {
         map: HashMap::new(),
         max: 0,
     };
-    let offset = offset_func_space("a".to_string(), &mut offsetStruct);
+    let offset = offset_func_space("a".to_string(), &mut offset_struct);
     assert_eq!(offset, 0);
-    let offset = offset_func_space("a".to_string(), &mut offsetStruct);
+    let offset = offset_func_space("a".to_string(), &mut offset_struct);
     assert_eq!(offset, 0);
-    let offset = offset_func_space("b".to_string(), &mut offsetStruct);
+    let offset = offset_func_space("b".to_string(), &mut offset_struct);
     assert_eq!(offset, LOCAL_VAR_OFFSET);
-    let offset = offset_func_space("c".to_string(), &mut offsetStruct);
+    let offset = offset_func_space("c".to_string(), &mut offset_struct);
     assert_eq!(offset, LOCAL_VAR_OFFSET * 2);
-    let offset = offset_func_space("d".to_string(), &mut offsetStruct);
+    let offset = offset_func_space("d".to_string(), &mut offset_struct);
     assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
-    let offset = offset_func_space("d".to_string(), &mut offsetStruct);
+    let offset = offset_func_space("d".to_string(), &mut offset_struct);
     assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
 }
