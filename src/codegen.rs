@@ -46,8 +46,8 @@ fn code_gen_var(var_name: String, offset: &mut Offset) {
 pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
     match exp {
         InfixExp { left, op, right } => {
-            code_gen_exp(*left, offset_struct);
-            code_gen_exp(*right, offset_struct);
+            code_gen_exp(*left.clone(), offset_struct);
+            code_gen_exp(*right.clone(), offset_struct);
 
             println!("  pop rdi");
             println!("  pop rax");
@@ -96,6 +96,13 @@ pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
                     println!("  movzb rax, al");
                 }
                 Assign => {
+                    match *left {
+                        Var(var) => {
+                            code_gen_var(var.clone(), offset_struct);
+                        }
+                        _ => panic!(format!("左辺値error: {:?}", left)),
+                    }
+                    code_gen_exp(*right.clone(), offset_struct);
                     println!("  pop rdi");
                     println!("  pop rax");
                     println!("  mov [rax], rdi");

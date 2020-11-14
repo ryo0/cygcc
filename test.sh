@@ -52,5 +52,9 @@ assert 0 '3 > 3;'
 assert 1 '3 >= 3;'  
 assert 1 '1 - 1 * 2 + 3 < 2*2;'  
 assert 0 '1 < 1;'  
-assert 1 '1 <= 1;'  
+assert 1 '1 <= 1;' 
+
+assert 3 'a = 3; a;'  
+assert 8 'a = 3; z = 5; a + z;'  
+assert 8 'foo=3; bar = 5; foo+bar;' 
 echo OK
