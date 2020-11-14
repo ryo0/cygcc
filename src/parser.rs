@@ -230,7 +230,7 @@ fn parse_exp_test() {
     parse_for_test("1+2*3+4+5*6;");
     parse_for_test("1 + 2 * 3 * 2 + 4 * -5;");
     parse_for_test("abc + def;");
-    parse_for_test("a = b = 1 + 2;");
+    parse_for_test("a = b = c = 1 + 2 + 3 ;");
     parse_for_test(
         "
     a = 1;

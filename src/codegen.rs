@@ -31,7 +31,6 @@ pub fn code_gen(p: Program) {
         match stmt {
             Stmt::Exp(exp) => {
                 code_gen_exp(exp, &mut offset_struct);
-                println!("  pop rax");
             }
         }
     }
@@ -46,6 +45,24 @@ fn code_gen_var(var_name: String, offset: &mut Offset) {
 pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
     match exp {
         InfixExp { left, op, right } => {
+            match op {
+                Assign => {
+                    match *left {
+                        Var(var) => {
+                            code_gen_var(var.clone(), offset_struct);
+                        }
+                        _ => panic!(format!("左辺値error: {:?}", left)),
+                    }
+                    code_gen_exp(*right.clone(), offset_struct);
+
+                    println!("  pop rdi");
+                    println!("  pop rax");
+                    println!("  mov [rax], rdi");
+                    println!("  push rdi"); // 代入の結果である右辺値をスタックに残しておきたいためこうする
+                    return;
+                }
+                _ => {}
+            }
             code_gen_exp(*left.clone(), offset_struct);
             code_gen_exp(*right.clone(), offset_struct);
 
@@ -95,18 +112,8 @@ pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
                     println!("  setle al");
                     println!("  movzb rax, al");
                 }
-                Assign => {
-                    match *left {
-                        Var(var) => {
-                            code_gen_var(var.clone(), offset_struct);
-                        }
-                        _ => panic!(format!("左辺値error: {:?}", left)),
-                    }
-                    code_gen_exp(*right.clone(), offset_struct);
-                    println!("  pop rdi");
-                    println!("  pop rax");
-                    println!("  mov [rax], rdi");
-                    println!("  push rdi"); // 代入の結果である右辺値をスタックに残しておきたいためこうする
+                _ => {
+                    panic!("error");
                 }
             }
             println!("  push rax");
