@@ -24,8 +24,14 @@ pub enum Exp {
         right: Box<Exp>,
     },
 }
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum Stmt {
+    Exp(Exp),
+}
 
-type ParseResult<'a> = Result<(Exp, &'a [Token]), String>;
+type Program = Vec<Stmt>;
+
+type ParseExpResult<'a> = Result<(Exp, &'a [Token]), String>;
 
 fn box_exp(exp: Exp) -> Box<Exp> {
     Box::new(exp)
@@ -55,11 +61,36 @@ fn token_mapper(token: Token) -> Op {
     }
 }
 
-pub fn parse_exp<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+pub fn parse_program(tokens: &[Token]) -> Result<Program, String> {
+    let mut stmt_vec: Vec<Stmt> = vec![];
+    let mut tokens = tokens;
+    while !tokens.is_empty() {
+        let stmt_result = parse_stmt(tokens);
+        match stmt_result {
+            Ok((stmt, rest)) => {
+                tokens = rest;
+                stmt_vec.push(stmt);
+            }
+            Err(err) => return Err(err),
+        }
+    }
+    return Ok(stmt_vec);
+}
+
+pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
+    let result = parse_exp(tokens);
+    match result {
+        Ok((ref exp, [Token::Semicolon, rest @ ..])) => Ok((Stmt::Exp(exp.clone()), rest)),
+        Err(err) => Err(err),
+        _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
+    }
+}
+
+pub fn parse_exp<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     parse_assign(tokens)
 }
 
-fn parse_assign<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+fn parse_assign<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     let (equality, rest) = parse_equality(tokens)?;
     match rest {
         [Token::Assign, rest @ ..] => {
@@ -71,7 +102,7 @@ fn parse_assign<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
 }
 
 const EQUALITY_TOKENS: &'static [Token] = &[Token::Eq, Token::NotEq];
-fn parse_equality<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+fn parse_equality<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     let (relational, rest) = parse_relational(tokens)?;
     match rest {
         [first, rest @ ..] if EQUALITY_TOKENS.contains(first) => {
@@ -93,7 +124,7 @@ fn parse_equality<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
 }
 
 const RELATIONAL_TOKENS: &'static [Token] = &[Token::Ls, Token::LsEq, Token::Gr, Token::GrEq];
-fn parse_relational<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+fn parse_relational<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     let (add, rest) = parse_add(tokens)?;
     match rest {
         [first, rest @ ..] if RELATIONAL_TOKENS.contains(first) => {
@@ -115,7 +146,7 @@ fn parse_relational<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
 }
 
 const ADD_TOKENS: &'static [Token] = &[Token::Plus, Token::Minus];
-fn parse_add<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+fn parse_add<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     let (mul, rest) = parse_mul(tokens)?;
     match rest {
         [first, rest @ ..] if ADD_TOKENS.contains(first) => {
@@ -135,7 +166,7 @@ fn parse_add<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
 
 const MUL_TOKENS: &'static [Token] = &[Token::Asterisk, Token::Slash];
 
-fn parse_mul<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+fn parse_mul<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     let (primary, rest) = parse_unary(tokens)?;
     match rest {
         [first, rest @ ..] if MUL_TOKENS.contains(first) => {
@@ -153,7 +184,7 @@ fn parse_mul<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     }
 }
 
-fn parse_unary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+fn parse_unary<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     match tokens {
         [Token::Plus, rest @ ..] => parse_unary(rest),
         [Token::Minus, rest @ ..] => {
@@ -164,7 +195,7 @@ fn parse_unary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
     }
 }
 
-fn parse_primary<'a>(tokens: &'a [Token]) -> ParseResult<'a> {
+fn parse_primary<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     match tokens {
         [Token::LParen, rest @ ..] => {
             let (add, rest) = parse_add(rest)?;
@@ -185,8 +216,8 @@ fn parse_for_test(str: &str) {
         Ok(result) => result,
         Err(err) => panic!(err),
     };
-    let exp = parse_exp(tokens.as_slice());
-    let exp = match exp {
+    let stmts = parse_program(tokens.as_slice());
+    let exp = match stmts {
         Ok(result) => result,
         Err(err) => panic!(err),
     };
@@ -194,8 +225,13 @@ fn parse_for_test(str: &str) {
 }
 #[test]
 fn parse_exp_test() {
-    parse_for_test("1+2*3+4+5*6");
-    parse_for_test("1 + 2 * 3 * 2 + 4 * -5");
-    parse_for_test("abc + def");
-    parse_for_test("a = b = 1 + 2");
+    parse_for_test("1+2*3+4+5*6;");
+    parse_for_test("1 + 2 * 3 * 2 + 4 * -5;");
+    parse_for_test("abc + def;");
+    parse_for_test("a = b = 1 + 2;");
+    parse_for_test(
+        "
+    a = 1;
+    b = a + 2;",
+    )
 }

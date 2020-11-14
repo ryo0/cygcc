@@ -13,6 +13,7 @@ pub enum Token {
     LsEq,
     LParen,
     RParen,
+    Semicolon,
     Int(i32),
     Var(String),
 }
@@ -108,6 +109,7 @@ fn symbol_to_token_mapper(c: char) -> Result<Token, String> {
         '<' => Ok(Token::Ls),
         '>' => Ok(Token::Gr),
         '=' => Ok(Token::Assign),
+        ';' => Ok(Token::Semicolon),
         _ => Err(format!("symbol_to_token_mapper error: {}", c)),
     }
 }
