@@ -16,6 +16,16 @@ pub enum Token {
     Semicolon,
     Int(i32),
     Var(String),
+    Return,
+}
+
+const RESERVED_WORDS: [&'static str; 1] = ["return"];
+
+fn reserved_words_map(str: &str) -> Token {
+    match str {
+        "return" => Token::Return,
+        _ => panic!(format!("reserved_words_map: {}", str)),
+    }
 }
 
 type LexerResult = Result<Vec<Token>, String>;
@@ -46,11 +56,16 @@ fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> LexerResult {
         [first, _rest @ ..] if first.is_alphabetic() => {
             let get_var_result = get_var(s, String::new());
             match get_var_result {
-                Ok((var, rest)) => {
-                    acm.push(var);
+                Ok((Token::Var(v), rest)) => {
+                    if RESERVED_WORDS.contains(&v.as_str()) {
+                        acm.push(reserved_words_map(&v));
+                    } else {
+                        acm.push(Token::Var(v));
+                    }
                     tokenize_main(rest, acm)
                 }
                 Err(err) => Err(err),
+                _ => panic!(format!("get_varがVarを返さない")),
             }
         }
         [first, second, rest @ ..] if two_char_is_two_symbol(*first, *second) => {
@@ -174,7 +189,7 @@ fn tokenize_test() {
         ]
     );
 
-    let result = tokenize("10!=2+2+2==6").ok().unwrap();
+    let result = tokenize("10!=2+2+2==6; return a;").ok().unwrap();
 
     assert_eq!(
         result,
@@ -188,6 +203,10 @@ fn tokenize_test() {
             Token::Int(2),
             Token::Eq,
             Token::Int(6),
+            Token::Semicolon,
+            Token::Return,
+            Token::Var("a".to_string()),
+            Token::Semicolon,
         ]
     );
 }
