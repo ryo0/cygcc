@@ -27,6 +27,7 @@ pub enum Exp {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Stmt {
     Exp(Exp),
+    Return(Exp),
 }
 
 pub type Program = Vec<Stmt>;
@@ -80,11 +81,25 @@ pub fn parse_program(tokens: &[Token]) -> Result<Program, String> {
 }
 
 pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
-    let result = parse_exp(tokens);
-    match result {
-        Ok((ref exp, [Token::Semicolon, rest @ ..])) => Ok((Stmt::Exp(exp.clone()), rest)),
-        Err(err) => Err(err),
-        _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
+    match tokens {
+        [Token::Return, rest @ ..] => {
+            let result = parse_exp(rest);
+            match result {
+                Ok((ref exp, [Token::Semicolon, rest @ ..])) => {
+                    Ok((Stmt::Return(exp.clone()), rest))
+                }
+                Err(err) => Err(err),
+                _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
+            }
+        }
+        _ => {
+            let result = parse_exp(tokens);
+            match result {
+                Ok((ref exp, [Token::Semicolon, rest @ ..])) => Ok((Stmt::Exp(exp.clone()), rest)),
+                Err(err) => Err(err),
+                _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
+            }
+        }
     }
 }
 
@@ -235,5 +250,10 @@ fn parse_exp_test() {
         "
     a = 1;
     b = a + 2;",
-    )
+    );
+    parse_for_test(
+        "
+    return a;
+    b = a + 2;",
+    );
 }

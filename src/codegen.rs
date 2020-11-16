@@ -34,6 +34,10 @@ pub fn code_gen(p: Program) {
                 code_gen_exp(exp, &mut offset_struct);
                 println!("  pop rax");
             }
+            Stmt::Return(exp) => {
+                code_gen_exp(exp, &mut offset_struct);
+                println!("  pop rax");
+            }
         }
     }
 }
