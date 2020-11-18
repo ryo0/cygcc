@@ -375,4 +375,8 @@ fn parse_exp_test() {
         "
     for(a = 0; a < 3; a = a + 1) a;",
     );
+    parse_test(
+        "
+        i=0; j=0; for (i=0; i<=10; i=i+1) j=2; return j;",
+    );
 }
