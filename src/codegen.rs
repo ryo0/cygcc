@@ -86,10 +86,15 @@ fn code_gen_for(
     let (end_label, jend_label) = state_holder.get_label("endFor".to_string());
     code_gen_option_exp(exp1, state_holder);
     println!("{}", begin_label);
-    code_gen_option_exp(exp2, state_holder);
-    println!("  pop rax");
-    println!("  cmp rax, 0");
-    println!("  je {}", jend_label);
+    match exp2 {
+        None => {}
+        _ => {
+            code_gen_option_exp(exp2, state_holder);
+            println!("  pop rax");
+            println!("  cmp rax, 0");
+            println!("  je {}", jend_label);
+        }
+    }
     code_gen(vec![stmt], state_holder);
     code_gen_option_exp(exp3, state_holder);
     println!("  jmp {}", jbegin_label);
