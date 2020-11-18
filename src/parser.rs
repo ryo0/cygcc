@@ -37,6 +37,12 @@ pub enum Stmt {
         cond: Box<Exp>,
         stmt: Box<Stmt>,
     },
+    For {
+        exp1: Box<Option<Exp>>,
+        exp2: Box<Option<Exp>>,
+        exp3: Box<Option<Exp>>,
+        stmt: Box<Stmt>,
+    },
 }
 
 pub type Program = Vec<Stmt>;
@@ -107,6 +113,7 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
         }
         [Token::If, Token::LParen, rest @ ..] => parse_if(rest),
         [Token::While, Token::LParen, rest @ ..] => parse_while(rest),
+        [Token::For, Token::LParen, rest @ ..] => parse_for(rest),
         _ => {
             let result = parse_exp(tokens);
             match result {
@@ -150,6 +157,37 @@ fn parse_while(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
         }
         _ => panic!("if: 条件式のかっこが閉じてない"),
     }
+}
+
+fn parse_for_cond_exp(tokens: &[Token]) -> Result<(Option<Exp>, &[Token]), String> {
+    // exp1; exp2; exp3)
+    match tokens {
+        [Token::Semicolon, rest @ ..] | [Token::RParen, rest @ ..] => Ok((None, rest)),
+        _ => {
+            let (exp, rest) = parse_exp(tokens)?;
+            match rest {
+                [Token::Semicolon, rest @ ..] | [Token::RParen, rest @ ..] => Ok((Some(exp), rest)),
+                _ => Err(format!("forの形式がおかしい。{:?}", tokens)),
+            }
+        }
+    }
+}
+
+fn parse_for(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
+    // for(exp1; exp2; exp3) stmt
+    let (exp1, rest) = parse_for_cond_exp(tokens)?;
+    let (exp2, rest) = parse_for_cond_exp(rest)?;
+    let (exp3, rest) = parse_for_cond_exp(rest)?;
+    let (stmt, rest) = parse_stmt(rest)?;
+    Ok((
+        Stmt::For {
+            exp1: Box::new(exp1),
+            exp2: Box::new(exp2),
+            exp3: Box::new(exp3),
+            stmt: Box::new(stmt),
+        },
+        rest,
+    ))
 }
 
 pub fn parse_exp<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
@@ -276,7 +314,7 @@ fn parse_primary<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     }
 }
 
-fn parse_for_test(str: &str) {
+fn parse_test(str: &str) {
     let tokens = tokenize(str);
     let tokens = match tokens {
         Ok(result) => result,
@@ -291,30 +329,50 @@ fn parse_for_test(str: &str) {
 }
 #[test]
 fn parse_exp_test() {
-    parse_for_test("1+2*3+4+5*6;");
-    parse_for_test("1 + 2 * 3 * 2 + 4 * -5;");
-    parse_for_test("abc + def;");
-    parse_for_test("a = b = c = 1 + 2 + 3 ;");
-    parse_for_test(
+    parse_test("1+2*3+4+5*6;");
+    parse_test("1 + 2 * 3 * 2 + 4 * -5;");
+    parse_test("abc + def;");
+    parse_test("a = b = c = 1 + 2 + 3 ;");
+    parse_test(
         "
     a = 1;
     b = a + 2;",
     );
-    parse_for_test(
+    parse_test(
         "
     return a;
     b = a + 2;",
     );
-    parse_for_test(
+    parse_test(
         "
     if(a)  a + 1; else a - 1;",
     );
-    parse_for_test(
+    parse_test(
         "
     if(a) a + 1;",
     );
-    parse_for_test(
+    parse_test(
         "
     while(a) a = a + 1;",
+    );
+    parse_test(
+        "
+    for(;;) a;",
+    );
+    parse_test(
+        "
+    for(a;;) a;",
+    );
+    parse_test(
+        "
+    for(;b;) a;",
+    );
+    parse_test(
+        "
+    for(;;c) a;",
+    );
+    parse_test(
+        "
+    for(a = 0; a < 3; a = a + 1) a;",
     );
 }
