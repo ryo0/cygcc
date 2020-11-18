@@ -41,6 +41,7 @@ pub fn code_gen(p: Program) {
                 println!("  pop rbp");
                 println!("  ret");
             }
+            _ => panic!("未対応"),
         }
     }
 }

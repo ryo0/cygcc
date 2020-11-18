@@ -17,13 +17,21 @@ pub enum Token {
     Int(i32),
     Var(String),
     Return,
+    If,
+    Else,
+    While,
+    For,
 }
 
-const RESERVED_WORDS: [&'static str; 1] = ["return"];
+const RESERVED_WORDS: [&'static str; 5] = ["return", "if", "else", "while", "for"];
 
 fn reserved_words_map(str: &str) -> Token {
     match str {
         "return" => Token::Return,
+        "if" => Token::If,
+        "else" => Token::Else,
+        "while" => Token::While,
+        "for" => Token::For,
         _ => panic!(format!("reserved_words_map: {}", str)),
     }
 }
@@ -209,4 +217,10 @@ fn tokenize_test() {
             Token::Semicolon,
         ]
     );
+    let result = tokenize("if(1) true; else false;").ok().unwrap();
+    println!("{:?}", result);
+    let result = tokenize("while(true) i = i * 2;").ok().unwrap();
+    println!("{:?}", result);
+    let result = tokenize("for (i = 0; i < 5; i++) i = i * 2;").ok().unwrap();
+    println!("{:?}", result);
 }

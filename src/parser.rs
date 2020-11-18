@@ -28,6 +28,11 @@ pub enum Exp {
 pub enum Stmt {
     Exp(Exp),
     Return(Exp),
+    If {
+        cond: Box<Exp>,
+        stmt1: Box<Stmt>,
+        stmt2: Box<Option<Stmt>>,
+    },
 }
 
 pub type Program = Vec<Stmt>;
@@ -80,18 +85,23 @@ pub fn parse_program(tokens: &[Token]) -> Result<Program, String> {
     parse_program_sub(tokens, vec![])
 }
 
+fn new_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>) -> Stmt {
+    Stmt::If {
+        cond: Box::new(cond),
+        stmt1: Box::new(stmt1),
+        stmt2: Box::new(stmt2),
+    }
+}
 pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
     match tokens {
         [Token::Return, rest @ ..] => {
-            let result = parse_exp(rest);
-            match result {
-                Ok((ref exp, [Token::Semicolon, rest @ ..])) => {
-                    Ok((Stmt::Return(exp.clone()), rest))
-                }
-                Err(err) => Err(err),
+            let (exp, rest) = parse_exp(rest)?;
+            match rest {
+                [Token::Semicolon, rest @ ..] => Ok((Stmt::Return(exp.clone()), rest)),
                 _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
             }
         }
+        [Token::If, Token::LParen, rest @ ..] => parse_if(rest),
         _ => {
             let result = parse_exp(tokens);
             match result {
@@ -100,6 +110,23 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
                 _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
             }
         }
+    }
+}
+
+fn parse_if(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
+    let (cond, rest) = parse_exp(tokens)?;
+    match rest {
+        [Token::RParen, rest @ ..] => {
+            let (stmt1, rest) = parse_stmt(rest)?;
+            match rest {
+                [Token::Else, rest @ ..] => {
+                    let (stmt2, rest) = parse_stmt(rest)?;
+                    Ok((new_if(cond, stmt1, Some(stmt2)), rest))
+                }
+                _ => Ok((new_if(cond, stmt1, None), rest)),
+            }
+        }
+        _ => panic!("if: 条件式のかっこが閉じてない"),
     }
 }
 
@@ -255,5 +282,13 @@ fn parse_exp_test() {
         "
     return a;
     b = a + 2;",
+    );
+    parse_for_test(
+        "
+    if(a)  a + 1; else a - 1;",
+    );
+    parse_for_test(
+        "
+    if(a) a + 1;",
     );
 }
