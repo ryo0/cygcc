@@ -87,6 +87,7 @@ assert 2 'if (1) return 2; else return 3; '
 assert 2 'if (2-1) return 2; else return 3; '
 
 assert 10 'i=0; while(i<10) i=i+1; return i; '
+assert 35 ' i=0; j = 7; while(i<35) i= i + j; return i;'
 
 assert 60 'sum=0; for (i=10; i<15; i=i+1) sum = sum + i; return sum;'
 
