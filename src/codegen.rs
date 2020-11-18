@@ -45,11 +45,27 @@ pub fn code_gen(p: Program) {
             Stmt::If { cond, stmt1, stmt2 } => {
                 code_gen_if(*cond, *stmt1, *stmt2, &mut state_holder);
             }
+            Stmt::While { cond, stmt } => {
+                code_gen_while(*cond, *stmt, &mut state_holder);
+            }
             _ => {
                 panic!("未対応");
             }
         }
     }
+}
+
+fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
+    let (begin_label, jbegin_label) = state_holder.get_label("beginWhile".to_string());
+    let (end_label, jend_label) = state_holder.get_label("endWhile".to_string());
+    println!("{}", begin_label);
+    code_gen_exp(cond, state_holder);
+    println!("  pop rax");
+    println!("  cmp rax, 0");
+    println!("  je {}", jend_label);
+    code_gen(vec![stmt]);
+    println!("  jump {}", jbegin_label);
+    println!("{}", end_label);
 }
 
 fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut StateHolder) {
@@ -236,6 +252,7 @@ fn test_map() {
     let offset = state_holder.get_offset("a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET);
 
-    let label = state_holder.get_label("if".to_string());
-    assert_eq!(label, ".Lif0");
+    let (label, jlabel) = state_holder.get_label("if".to_string());
+    assert_eq!(label, ".L.if0:");
+    assert_eq!(jlabel, ".L.if0");
 }
