@@ -64,7 +64,7 @@ fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
     println!("  cmp rax, 0");
     println!("  je {}", jend_label);
     code_gen(vec![stmt]);
-    println!("  jump {}", jbegin_label);
+    println!("  jmp {}", jbegin_label);
     println!("{}", end_label);
 }
 
