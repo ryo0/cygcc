@@ -33,6 +33,10 @@ pub enum Stmt {
         stmt1: Box<Stmt>,
         stmt2: Box<Option<Stmt>>,
     },
+    While {
+        cond: Box<Exp>,
+        stmt: Box<Stmt>,
+    },
 }
 
 pub type Program = Vec<Stmt>;
@@ -102,6 +106,7 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
             }
         }
         [Token::If, Token::LParen, rest @ ..] => parse_if(rest),
+        [Token::While, Token::LParen, rest @ ..] => parse_while(rest),
         _ => {
             let result = parse_exp(tokens);
             match result {
@@ -125,6 +130,23 @@ fn parse_if(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
                 }
                 _ => Ok((new_if(cond, stmt1, None), rest)),
             }
+        }
+        _ => panic!("if: 条件式のかっこが閉じてない"),
+    }
+}
+
+fn parse_while(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
+    let (cond, rest) = parse_exp(tokens)?;
+    match rest {
+        [Token::RParen, rest @ ..] => {
+            let (stmt, rest) = parse_stmt(rest)?;
+            Ok((
+                Stmt::While {
+                    cond: Box::new(cond),
+                    stmt: Box::new(stmt),
+                },
+                rest,
+            ))
         }
         _ => panic!("if: 条件式のかっこが閉じてない"),
     }
@@ -290,5 +312,9 @@ fn parse_exp_test() {
     parse_for_test(
         "
     if(a) a + 1;",
+    );
+    parse_for_test(
+        "
+    while(a) a = a + 1;",
     );
 }
