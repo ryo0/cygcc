@@ -24,7 +24,7 @@ pub fn start_to_gen_code(p: Program) {
 }
 
 pub fn code_gen(p: Program) {
-    let mut offset_struct = StateHolder {
+    let mut state_holder = StateHolder {
         offset_map: HashMap::new(),
         max_offset: 0,
         label_counter: 0,
@@ -32,17 +32,48 @@ pub fn code_gen(p: Program) {
     for stmt in p {
         match stmt {
             Stmt::Exp(exp) => {
-                code_gen_exp(exp, &mut offset_struct);
+                code_gen_exp(exp, &mut state_holder);
                 println!("  pop rax");
             }
             Stmt::Return(exp) => {
-                code_gen_exp(exp, &mut offset_struct);
+                code_gen_exp(exp, &mut state_holder);
                 println!("  pop rax");
                 println!("  mov rsp, rbp");
                 println!("  pop rbp");
                 println!("  ret");
             }
-            _ => panic!("未対応"),
+            Stmt::If { cond, stmt1, stmt2 } => {
+                code_gen_if(*cond, *stmt1, *stmt2, &mut state_holder);
+            }
+            _ => {
+                panic!("未対応");
+            }
+        }
+    }
+}
+
+fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut StateHolder) {
+    code_gen_exp(cond, state_holder);
+    match stmt2 {
+        Some(stmt2) => {
+            let (else_label, jelse_label) = state_holder.get_label("if".to_string());
+            let (if_label, jif_label) = state_holder.get_label("else".to_string());
+            println!("  pop rax");
+            println!("  cmp rax, 0");
+            println!("  je {}", jelse_label);
+            code_gen(vec![stmt1]);
+            println!("  jmp {}", jif_label);
+            println!("{}", else_label);
+            code_gen(vec![stmt2]);
+            println!("{}", if_label);
+        }
+        None => {
+            let (label, jlabel) = state_holder.get_label("if".to_string());
+            println!("  pop rax");
+            println!("  cmp rax, 0");
+            println!("  je {}", jlabel);
+            code_gen(vec![stmt1]);
+            println!("{}", label);
         }
     }
 }
@@ -53,32 +84,32 @@ fn code_gen_var(var_name: String, offset: &mut StateHolder) {
     println!("  push rax");
 }
 
-fn code_gen_assign(left: Exp, right: Exp, offset_struct: &mut StateHolder) {
+fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
     match left {
         Var(var) => {
-            code_gen_var(var.clone(), offset_struct);
+            code_gen_var(var.clone(), state_holder);
         }
         _ => panic!(format!("左辺値error: {:?}", left)),
     }
-    code_gen_exp(right, offset_struct);
+    code_gen_exp(right, state_holder);
 
     println!("  pop rdi");
     println!("  pop rax");
     println!("  mov [rax], rdi");
     println!("  push rdi"); // 代入の結果である右辺値をスタックに残しておきたいためこうする
 }
-pub fn code_gen_exp(exp: Exp, offset_struct: &mut StateHolder) {
+pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
     match exp {
         InfixExp { left, op, right } => {
             match op {
                 Assign => {
-                    code_gen_assign(*left.clone(), *right.clone(), offset_struct);
+                    code_gen_assign(*left.clone(), *right.clone(), state_holder);
                     return;
                 }
                 _ => {}
             }
-            code_gen_exp(*left.clone(), offset_struct);
-            code_gen_exp(*right.clone(), offset_struct);
+            code_gen_exp(*left.clone(), state_holder);
+            code_gen_exp(*right.clone(), state_holder);
 
             println!("  pop rdi");
             println!("  pop rax");
@@ -136,7 +167,7 @@ pub fn code_gen_exp(exp: Exp, offset_struct: &mut StateHolder) {
             println!("  push {}", i);
         }
         Var(v) => {
-            code_gen_var(v, offset_struct);
+            code_gen_var(v, state_holder);
             println!("  pop rax");
             println!("  mov rax, [rax]");
             println!("  push rax");
@@ -151,6 +182,11 @@ pub struct StateHolder {
 }
 
 impl StateHolder {
+    fn get_label(&mut self, prefix: String) -> (String, String) {
+        let jump_label = format!(".L.{}{}", prefix, self.get_label_counter());
+        let label = format!("{}:", jump_label);
+        (label, jump_label)
+    }
     fn get_label_counter(&mut self) -> i32 {
         let value = self.label_counter;
         self.label_counter += 1;
@@ -173,30 +209,33 @@ impl StateHolder {
 
 #[test]
 fn test_map() {
-    let mut offset_struct = StateHolder {
+    let mut state_holder = StateHolder {
         offset_map: HashMap::new(),
         max_offset: 0,
         label_counter: 0,
     };
-    let offset = offset_struct.get_offset("a".to_string());
+    let offset = state_holder.get_offset("a".to_string());
     assert_eq!(offset, 0);
-    let offset = offset_struct.get_offset("a".to_string());
+    let offset = state_holder.get_offset("a".to_string());
     assert_eq!(offset, 0);
-    let offset = offset_struct.get_offset("b".to_string());
+    let offset = state_holder.get_offset("b".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET);
-    let offset = offset_struct.get_offset("c".to_string());
+    let offset = state_holder.get_offset("c".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * 2);
-    let offset = offset_struct.get_offset("d".to_string());
+    let offset = state_holder.get_offset("d".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
-    let offset = offset_struct.get_offset("d".to_string());
+    let offset = state_holder.get_offset("d".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * 3);
-    offset_struct.reset_offset();
-    let offset = offset_struct.get_offset("d".to_string());
+    state_holder.reset_offset();
+    let offset = state_holder.get_offset("d".to_string());
     assert_eq!(offset, 0);
-    let offset = offset_struct.get_offset("d".to_string());
+    let offset = state_holder.get_offset("d".to_string());
     assert_eq!(offset, 0);
-    let offset = offset_struct.get_offset("a".to_string());
+    let offset = state_holder.get_offset("a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET);
-    let offset = offset_struct.get_offset("a".to_string());
+    let offset = state_holder.get_offset("a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET);
+
+    let label = state_holder.get_label("if".to_string());
+    assert_eq!(label, ".Lif0");
 }
