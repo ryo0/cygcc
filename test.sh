@@ -92,13 +92,15 @@ assert 60 'sum=0; for (i=10; i<15; i=i+1) sum = sum + i; return sum;'
 
 assert 3 'i = 1; j = 2; j = i + j; return j;'
 assert 2 'j = 0; j = 2; return j;'
+
 assert 11 'i=0; j=0; for (i=0; i<=10; i=i+1) j=i+j; return i; '
 assert 2 'i=0; j=0; for (i=0; i<=10; i=i+1) j=2; return j; '
-# assert 2 'i=0; j=0; for (i=0; i<=10; i=i+1) j=2; return i; '
-# assert 55 'i=0; j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; '
+
+assert 11 'i=0; j=0; for (i=0; i<=10; i=i+1) j=2; return i; '
+assert 55 'i=0; j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; '
 # assert 3 ' for (;;) return 3; return 5; '
 
-# assert 9 'j = 0; for (i=0; i<10; i=i+1) j = i; return j; '
-# assert 10 'j = 0; for (i=0; i<10; i=i+1) j = i; return i;'
+assert 9 'j = 0; for (i=0; i<10; i=i+1) j = i; return j; '
+assert 10 'j = 0; for (i=0; i<10; i=i+1) j = i; return i;'
 
 echo OK

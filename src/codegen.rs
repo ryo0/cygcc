@@ -16,7 +16,7 @@ pub fn start_to_gen_code(p: Program) {
     println!("  mov rbp, rsp");
     println!("  sub rsp, 208");
 
-    code_gen(p);
+    start_to_code_gen(p);
 
     println!("  mov rsp, rbp");
     println!("  pop rbp");
@@ -32,30 +32,34 @@ fn code_gen_option_exp(exp: Option<Exp>, state_holder: &mut StateHolder) {
     }
 }
 
-pub fn code_gen(p: Program) {
+fn start_to_code_gen(p: Program) {
     let mut state_holder = StateHolder {
         offset_map: HashMap::new(),
         max_offset: 0,
         label_counter: 0,
     };
+    code_gen(p, &mut state_holder)
+}
+
+pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
     for stmt in p {
         match stmt {
             Stmt::Exp(exp) => {
-                code_gen_exp(exp, &mut state_holder);
+                code_gen_exp(exp, state_holder);
                 println!("  pop rax");
             }
             Stmt::Return(exp) => {
-                code_gen_exp(exp, &mut state_holder);
+                code_gen_exp(exp, state_holder);
                 println!("  pop rax");
                 println!("  mov rsp, rbp");
                 println!("  pop rbp");
                 println!("  ret");
             }
             Stmt::If { cond, stmt1, stmt2 } => {
-                code_gen_if(*cond, *stmt1, *stmt2, &mut state_holder);
+                code_gen_if(*cond, *stmt1, *stmt2, state_holder);
             }
             Stmt::While { cond, stmt } => {
-                code_gen_while(*cond, *stmt, &mut state_holder);
+                code_gen_while(*cond, *stmt, state_holder);
             }
             Stmt::For {
                 exp1,
@@ -63,7 +67,7 @@ pub fn code_gen(p: Program) {
                 exp3,
                 stmt,
             } => {
-                code_gen_for(*exp1, *exp2, *exp3, *stmt, &mut state_holder);
+                code_gen_for(*exp1, *exp2, *exp3, *stmt, state_holder);
             }
             _ => {
                 panic!("未対応");
@@ -86,7 +90,7 @@ fn code_gen_for(
     println!("  pop rax");
     println!("  cmp rax, 0");
     println!("  je {}", jend_label);
-    code_gen(vec![stmt]);
+    code_gen(vec![stmt], state_holder);
     code_gen_option_exp(exp3, state_holder);
     println!("  jmp {}", jbegin_label);
     println!("{}", end_label);
@@ -99,7 +103,7 @@ fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
     println!("  pop rax");
     println!("  cmp rax, 0");
     println!("  je {}", jend_label);
-    code_gen(vec![stmt]);
+    code_gen(vec![stmt], state_holder);
     println!("  jmp {}", jbegin_label);
     println!("{}", end_label);
 }
@@ -113,10 +117,10 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
             println!("  pop rax");
             println!("  cmp rax, 0");
             println!("  je {}", jelse_label);
-            code_gen(vec![stmt1]);
+            code_gen(vec![stmt1], state_holder);
             println!("  jmp {}", jif_label);
             println!("{}", else_label);
-            code_gen(vec![stmt2]);
+            code_gen(vec![stmt2], state_holder);
             println!("{}", if_label);
         }
         None => {
@@ -124,7 +128,7 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
             println!("  pop rax");
             println!("  cmp rax, 0");
             println!("  je {}", jlabel);
-            code_gen(vec![stmt1]);
+            code_gen(vec![stmt1], state_holder);
             println!("{}", label);
         }
     }
