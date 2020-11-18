@@ -24,9 +24,10 @@ pub fn start_to_gen_code(p: Program) {
 }
 
 pub fn code_gen(p: Program) {
-    let mut offset_struct = Offset {
-        map: HashMap::new(),
-        max: 0,
+    let mut offset_struct = StateHolder {
+        offset_map: HashMap::new(),
+        max_offset: 0,
+        label_counter: 0,
     };
     for stmt in p {
         match stmt {
@@ -46,13 +47,13 @@ pub fn code_gen(p: Program) {
     }
 }
 
-fn code_gen_var(var_name: String, offset: &mut Offset) {
+fn code_gen_var(var_name: String, offset: &mut StateHolder) {
     println!("  mov rax, rbp");
     println!("  sub rax, {}", offset.get_offset(var_name));
     println!("  push rax");
 }
 
-fn code_gen_assign(left: Exp, right: Exp, offset_struct: &mut Offset) {
+fn code_gen_assign(left: Exp, right: Exp, offset_struct: &mut StateHolder) {
     match left {
         Var(var) => {
             code_gen_var(var.clone(), offset_struct);
@@ -66,7 +67,7 @@ fn code_gen_assign(left: Exp, right: Exp, offset_struct: &mut Offset) {
     println!("  mov [rax], rdi");
     println!("  push rdi"); // 代入の結果である右辺値をスタックに残しておきたいためこうする
 }
-pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
+pub fn code_gen_exp(exp: Exp, offset_struct: &mut StateHolder) {
     match exp {
         InfixExp { left, op, right } => {
             match op {
@@ -143,32 +144,39 @@ pub fn code_gen_exp(exp: Exp, offset_struct: &mut Offset) {
     }
 }
 
-pub struct Offset {
-    map: HashMap<String, i32>,
-    max: i32,
+pub struct StateHolder {
+    offset_map: HashMap<String, i32>,
+    max_offset: i32,
+    label_counter: i32,
 }
 
-impl Offset {
+impl StateHolder {
+    fn get_label_counter(&mut self) -> i32 {
+        let value = self.label_counter;
+        self.label_counter += 1;
+        value
+    }
     fn get_offset(&mut self, str: String) -> i32 {
-        if let Some(max) = self.map.get(&str) {
+        if let Some(max) = self.offset_map.get(&str) {
             return *max;
         }
-        let before_max = self.max;
-        self.max += LOCAL_VAR_OFFSET;
-        self.map.insert(str, before_max);
+        let before_max = self.max_offset;
+        self.max_offset += LOCAL_VAR_OFFSET;
+        self.offset_map.insert(str, before_max);
         before_max
     }
     fn reset_offset(&mut self) {
-        self.map = HashMap::new();
-        self.max = 0;
+        self.offset_map = HashMap::new();
+        self.max_offset = 0;
     }
 }
 
 #[test]
 fn test_map() {
-    let mut offset_struct = Offset {
-        map: HashMap::new(),
-        max: 0,
+    let mut offset_struct = StateHolder {
+        offset_map: HashMap::new(),
+        max_offset: 0,
+        label_counter: 0,
     };
     let offset = offset_struct.get_offset("a".to_string());
     assert_eq!(offset, 0);
