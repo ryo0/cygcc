@@ -23,6 +23,15 @@ pub fn start_to_gen_code(p: Program) {
     println!("  ret");
 }
 
+fn code_gen_option_exp(exp: Option<Exp>, state_holder: &mut StateHolder) {
+    match exp {
+        None => {}
+        Some(exp) => {
+            code_gen_exp(exp, state_holder);
+        }
+    }
+}
+
 pub fn code_gen(p: Program) {
     let mut state_holder = StateHolder {
         offset_map: HashMap::new(),
@@ -48,13 +57,44 @@ pub fn code_gen(p: Program) {
             Stmt::While { cond, stmt } => {
                 code_gen_while(*cond, *stmt, &mut state_holder);
             }
+            Stmt::For {
+                exp1,
+                exp2,
+                exp3,
+                stmt,
+            } => {
+                code_gen_for(*exp1, *exp2, *exp3, *stmt, &mut state_holder);
+            }
             _ => {
                 panic!("未対応");
             }
         }
     }
 }
-
+fn code_gen_for(
+    exp1: Option<Exp>,
+    exp2: Option<Exp>,
+    exp3: Option<Exp>,
+    stmt: Stmt,
+    state_holder: &mut StateHolder,
+) {
+    let (begin_label, jbegin_label) = state_holder.get_label("beginFor".to_string());
+    let (end_label, jend_label) = state_holder.get_label("endFor".to_string());
+    code_gen_option_exp(exp1, state_holder);
+    println!("{}", begin_label);
+    match exp2 {
+        Some(exp2) => {
+            code_gen_exp(exp2, state_holder);
+            println!("  cmp rax, 0");
+            println!("  je {}", jend_label);
+        }
+        None => {}
+    }
+    code_gen(vec![stmt]);
+    code_gen_option_exp(exp3, state_holder);
+    println!("  jmp {}", jbegin_label);
+    println!("{}", end_label);
+}
 fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
     let (begin_label, jbegin_label) = state_holder.get_label("beginWhile".to_string());
     let (end_label, jend_label) = state_holder.get_label("endWhile".to_string());
