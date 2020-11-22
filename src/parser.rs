@@ -469,5 +469,6 @@ fn parse_exp_test() {
     parse_test("if (true) {x = 2; false;} else {j = 0; true;}");
 
     parse_test("int sum (x, y) {return x + y; }");
+    parse_test("int sum (x, y) {for(;;) {i = i + 1;} }");
     parse_test("sum(1+2, 2+3);");
 }
