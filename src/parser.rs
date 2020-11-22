@@ -23,6 +23,10 @@ pub enum Exp {
         op: Op,
         right: Box<Exp>,
     },
+    FuncCall {
+        fun: Box<Exp>,
+        args: Vec<Exp>,
+    },
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Stmt {
@@ -49,10 +53,6 @@ pub enum Stmt {
         fun: Box<Exp>,
         params: Vec<Exp>,
         body: Vec<Stmt>,
-    },
-    FuncCall {
-        fun: Box<Exp>,
-        args: Vec<Exp>,
     },
 }
 
@@ -119,7 +119,10 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
             let (exp, rest) = parse_exp(rest)?;
             match rest {
                 [Token::Semicolon, rest @ ..] => Ok((Stmt::Return(exp.clone()), rest)),
-                _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
+                _ => Err(format!(
+                    "parse_stmt1: stmtがSemicolonで終了していない:\n{:?}",
+                    tokens
+                )),
             }
         }
         [Token::LBrace, rest @ ..] => {
@@ -129,7 +132,6 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
         [Token::If, Token::LParen, rest @ ..] => parse_if(rest),
         [Token::While, Token::LParen, rest @ ..] => parse_while(rest),
         [Token::For, Token::LParen, rest @ ..] => parse_for(rest),
-        [Token::Var(v), Token::LParen, rest @ ..] => parse_fun_call(v.clone(), rest),
         [Token::TypeDec(t), Token::Var(fun), Token::LParen, rest @ ..] => {
             parse_func(t.clone(), fun.clone(), rest)
         }
@@ -138,7 +140,10 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
             match result {
                 Ok((ref exp, [Token::Semicolon, rest @ ..])) => Ok((Stmt::Exp(exp.clone()), rest)),
                 Err(err) => Err(err),
-                _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
+                _ => Err(format!(
+                    "parse_stmt2: stmtがSemicolonで終了していない:\n{:?}",
+                    tokens,
+                )),
             }
         }
     }
@@ -178,17 +183,10 @@ fn parse_func(t: Type, fun: String, tokens: &[Token]) -> Result<(Stmt, &[Token])
     ))
 }
 
-fn parse_fun_call(v: String, tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
+fn parse_fun_call(v: String, tokens: &[Token]) -> Result<(Exp, &[Token]), String> {
     let (args, rest) = parse_vars(tokens, &mut vec![])?;
-    let rest = match rest {
-        [Token::Semicolon, rest @ ..] => rest,
-        _ => Err(format!(
-            "fun callがSemicolonで終わってない, \nfun: {}, \ntokens: {:?}",
-            v, tokens
-        ))?,
-    };
     Ok((
-        Stmt::FuncCall {
+        Exp::FuncCall {
             fun: Box::new(Exp::Var(v)),
             args: args,
         },
@@ -395,6 +393,7 @@ fn parse_primary<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
                 _ => Err(format!("カッコが閉じていない: {:?}", tokens)),
             }
         }
+        [Token::Var(v), Token::LParen, rest @ ..] => parse_fun_call(v.clone(), rest),
         [Token::Int(i), rest @ ..] => Ok((Exp::Int(*i), rest)),
         [Token::Var(v), rest @ ..] => Ok((Exp::Var(v.clone()), rest)),
         _ => Err(format!("unexpected token: {:?}", tokens)),
@@ -471,4 +470,5 @@ fn parse_exp_test() {
     parse_test("int sum (x, y) {return x + y; }");
     parse_test("int sum (x, y) {for(;;) {i = i + 1;} }");
     parse_test("sum(1+2, 2+3);");
+    parse_test("sum(1+2, 2+3) + sum(0, 1);");
 }

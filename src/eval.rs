@@ -32,6 +32,7 @@ fn eval_exp(exp: Exp) -> Val {
         }
         Exp::Int(i) => Val::Int(i),
         Exp::Var(v) => Val::Var(v),
+        _ => panic!("未対応"),
     }
 }
 

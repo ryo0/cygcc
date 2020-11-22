@@ -5,6 +5,8 @@ use crate::parser::Program;
 use crate::parser::Stmt;
 use std::collections::HashMap;
 
+static argReg: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+
 const LOCAL_VAR_OFFSET: i32 = 8;
 
 pub fn start_to_gen_code(p: Program) {
@@ -70,12 +72,29 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
             } => {
                 code_gen_for(*exp1, *exp2, *exp3, *stmt, state_holder);
             }
+            Stmt::Func {
+                t,
+                fun,
+                params,
+                body,
+            } => {
+                code_gen_fun(*fun, params, body);
+            }
             _ => {
                 panic!("未対応");
             }
         }
     }
 }
+
+fn code_gen_fun_call(f: Exp, args: Vec<Exp>) {}
+
+fn code_gen_fun(f: Exp, params: Vec<Exp>, body: Vec<Stmt>) {
+    println!("  push rbp");
+    println!("  mov rbp, rsp");
+    println!("  sub rsp, 16");
+}
+
 fn code_gen_for(
     exp1: Option<Exp>,
     exp2: Option<Exp>,
@@ -162,6 +181,9 @@ fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
 }
 pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
     match exp {
+        FuncCall { fun, args } => {
+            code_gen_fun_call(*fun, args);
+        }
         InfixExp { left, op, right } => {
             match op {
                 Assign => {
