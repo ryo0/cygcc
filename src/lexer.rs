@@ -21,6 +21,8 @@ pub enum Token {
     Else,
     While,
     For,
+    LBrace,
+    RBrace,
 }
 
 const RESERVED_WORDS: [&'static str; 5] = ["return", "if", "else", "while", "for"];
@@ -133,6 +135,8 @@ fn symbol_to_token_mapper(c: char) -> Result<Token, String> {
         '>' => Ok(Token::Gr),
         '=' => Ok(Token::Assign),
         ';' => Ok(Token::Semicolon),
+        '{' => Ok(Token::LBrace),
+        '}' => Ok(Token::RBrace),
         _ => Err(format!("symbol_to_token_mapper error: {}", c)),
     }
 }

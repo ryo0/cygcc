@@ -28,6 +28,7 @@ pub enum Exp {
 pub enum Stmt {
     Exp(Exp),
     Return(Exp),
+    Block(Vec<Stmt>),
     If {
         cond: Box<Exp>,
         stmt1: Box<Stmt>,
@@ -111,6 +112,10 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
                 _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
             }
         }
+        [Token::LBrace, rest @ ..] => {
+            let (block, rest) = parse_block(rest, &mut vec![])?;
+            Ok((Stmt::Block(block), rest))
+        }
         [Token::If, Token::LParen, rest @ ..] => parse_if(rest),
         [Token::While, Token::LParen, rest @ ..] => parse_while(rest),
         [Token::For, Token::LParen, rest @ ..] => parse_for(rest),
@@ -122,6 +127,18 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
                 _ => Err(format!("stmtがSemicolonで終了していない:\n{:?}", tokens)),
             }
         }
+    }
+}
+
+fn parse_block<'a>(
+    tokens: &'a [Token],
+    acm: &mut Vec<Stmt>,
+) -> Result<(Vec<Stmt>, &'a [Token]), String> {
+    let (stmt, rest) = parse_stmt(tokens)?;
+    acm.push(stmt);
+    match rest {
+        [Token::RBrace, rest @ ..] => Ok((acm.clone(), rest)),
+        _ => parse_block(rest, acm),
     }
 }
 
@@ -379,4 +396,5 @@ fn parse_exp_test() {
         "
         i=0; j=0; for (i=0; i<=10; i=i+1) j=2; return j;",
     );
+    parse_test("if (true) {x = 2; false;} else {j = 0; true;}");
 }
