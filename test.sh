@@ -76,15 +76,15 @@ assert 1 'return 1; 2; 3;'
 assert 2 '1; return 2; 3;'
 assert 3 '1; 2; return 3;'
 
-assert 3 'if (0) return 2; return 3; '
-assert 3 'if (1-1) return 2; return 3; '
+assert 3 'if (0) {return 2;} return 3; '
+assert 3 'if (1-1){ return 2;} return 3; '
 assert 2 'if (1) return 2; return 3; '
 assert 2 'if (2-1) return 2; return 3; '
 
-assert 3 'if (0) return 2; else return 3; '
+assert 3 'if (0) {return 2;} else {return 3;} '
 assert 3 'if (1-1) return 2; else return 3; '
 assert 2 'if (1) return 2; else return 3; '
-assert 2 'if (2-1) return 2; else return 3; '
+assert 2 'if (2-1) {return 2;} else {return 3;} '
 
 assert 10 'i=0; while(i<10) {i=i+1;} return i; '
 assert 35 ' i=0; j = 7; while(i<35) {i= i + j;} return i;'
@@ -106,5 +106,7 @@ assert 10 'j = 0; for (i=0; i<10; i=i+1) {j = i; }return i;'
 assert 3 ' for (;;) {return 3;} return 5; '
 
 assert 90 'j = 0; for (i = 0; i < 10; i = i + 1) {j = j + i ; j = j + i;} return j; '
+
+assert 3 'if (0) {return 2;} else {i = 3; return i; return 100;} '
 
 echo OK
