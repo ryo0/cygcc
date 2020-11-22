@@ -55,6 +55,7 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
                 println!("  pop rbp");
                 println!("  ret");
             }
+            Stmt::Block(stmts) => code_gen(stmts, state_holder),
             Stmt::If { cond, stmt1, stmt2 } => {
                 code_gen_if(*cond, *stmt1, *stmt2, state_holder);
             }
