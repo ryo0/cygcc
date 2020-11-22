@@ -46,7 +46,7 @@ pub enum Stmt {
     },
     Func {
         t: Type,
-        fun: String,
+        fun: Box<Exp>,
         params: Vec<Exp>,
         body: Vec<Stmt>,
     },
@@ -148,13 +148,18 @@ fn parse_vars<'a>(
     tokens: &'a [Token],
     acm: &mut Vec<Exp>,
 ) -> Result<(Vec<Exp>, &'a [Token]), String> {
+    let tokens = match tokens {
+        [Token::LParen, rest @ ..] => rest,
+        _ => tokens,
+    };
     match tokens {
-        [Token::Var(v), rest @ ..] => {
-            acm.push(Exp::Var(v.clone()));
-            parse_vars(rest, acm)
-        }
         [Token::Comma, rest @ ..] => parse_vars(rest, acm),
         [Token::RParen, rest @ ..] => Ok((acm.clone(), rest)),
+        [_, _rest @ ..] => {
+            let (exp, rest) = parse_exp(tokens)?;
+            acm.push(exp);
+            parse_vars(rest, acm)
+        }
         _ => Err(format!("varsの形式がおかしい: {:?}", tokens)),
     }
 }
@@ -165,7 +170,7 @@ fn parse_func(t: Type, fun: String, tokens: &[Token]) -> Result<(Stmt, &[Token])
     Ok((
         Stmt::Func {
             t: t,
-            fun: fun,
+            fun: Box::new(Exp::Var(fun)),
             params: params,
             body: body,
         },
@@ -175,6 +180,13 @@ fn parse_func(t: Type, fun: String, tokens: &[Token]) -> Result<(Stmt, &[Token])
 
 fn parse_fun_call(v: String, tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
     let (args, rest) = parse_vars(tokens, &mut vec![])?;
+    let rest = match rest {
+        [Token::Semicolon, rest @ ..] => rest,
+        _ => Err(format!(
+            "fun callがSemicolonで終わってない, \nfun: {}, \ntokens: {:?}",
+            v, tokens
+        ))?,
+    };
     Ok((
         Stmt::FuncCall {
             fun: Box::new(Exp::Var(v)),
@@ -188,6 +200,10 @@ fn parse_block<'a>(
     tokens: &'a [Token],
     acm: &mut Vec<Stmt>,
 ) -> Result<(Vec<Stmt>, &'a [Token]), String> {
+    let tokens = match tokens {
+        [Token::LBrace, rest @ ..] => rest,
+        _ => tokens,
+    };
     let (stmt, rest) = parse_stmt(tokens)?;
     acm.push(stmt);
     match rest {
@@ -451,4 +467,7 @@ fn parse_exp_test() {
         i=0; j=0; for (i=0; i<=10; i=i+1) j=2; return j;",
     );
     parse_test("if (true) {x = 2; false;} else {j = 0; true;}");
+
+    parse_test("int sum (x, y) {return x + y; }");
+    parse_test("sum(1+2, 2+3);");
 }
