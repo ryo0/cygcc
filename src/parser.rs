@@ -1,4 +1,4 @@
-use crate::lexer::{tokenize, Token};
+use crate::lexer::{tokenize, Token, Type};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Op {
@@ -43,6 +43,16 @@ pub enum Stmt {
         exp2: Box<Option<Exp>>,
         exp3: Box<Option<Exp>>,
         stmt: Box<Stmt>,
+    },
+    Func {
+        t: Type,
+        fun: String,
+        params: Vec<Exp>,
+        body: Vec<Stmt>,
+    },
+    FuncCall {
+        fun: Box<Exp>,
+        args: Vec<Exp>,
     },
 }
 
@@ -119,6 +129,10 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
         [Token::If, Token::LParen, rest @ ..] => parse_if(rest),
         [Token::While, Token::LParen, rest @ ..] => parse_while(rest),
         [Token::For, Token::LParen, rest @ ..] => parse_for(rest),
+        [Token::Var(v), Token::LParen, rest @ ..] => parse_fun_call(v.clone(), rest),
+        [Token::TypeDec(t), Token::Var(fun), Token::LParen, rest @ ..] => {
+            parse_func(t.clone(), fun.clone(), rest)
+        }
         _ => {
             let result = parse_exp(tokens);
             match result {
@@ -128,6 +142,46 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
             }
         }
     }
+}
+
+fn parse_vars<'a>(
+    tokens: &'a [Token],
+    acm: &mut Vec<Exp>,
+) -> Result<(Vec<Exp>, &'a [Token]), String> {
+    match tokens {
+        [Token::Var(v), rest @ ..] => {
+            acm.push(Exp::Var(v.clone()));
+            parse_vars(rest, acm)
+        }
+        [Token::Comma, rest @ ..] => parse_vars(rest, acm),
+        [Token::RParen, rest @ ..] => Ok((acm.clone(), rest)),
+        _ => Err(format!("varsの形式がおかしい: {:?}", tokens)),
+    }
+}
+
+fn parse_func(t: Type, fun: String, tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
+    let (params, rest) = parse_vars(tokens, &mut vec![])?;
+    let (body, rest) = parse_block(rest, &mut vec![])?;
+    Ok((
+        Stmt::Func {
+            t: t,
+            fun: fun,
+            params: params,
+            body: body,
+        },
+        rest,
+    ))
+}
+
+fn parse_fun_call(v: String, tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
+    let (args, rest) = parse_vars(tokens, &mut vec![])?;
+    Ok((
+        Stmt::FuncCall {
+            fun: Box::new(Exp::Var(v)),
+            args: args,
+        },
+        rest,
+    ))
 }
 
 fn parse_block<'a>(

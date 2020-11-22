@@ -23,9 +23,15 @@ pub enum Token {
     For,
     LBrace,
     RBrace,
+    TypeDec(Type),
+    Comma,
+}
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum Type {
+    Int,
 }
 
-const RESERVED_WORDS: [&'static str; 5] = ["return", "if", "else", "while", "for"];
+const RESERVED_WORDS: [&'static str; 6] = ["return", "if", "else", "while", "for", "int"];
 
 fn reserved_words_map(str: &str) -> Token {
     match str {
@@ -34,6 +40,7 @@ fn reserved_words_map(str: &str) -> Token {
         "else" => Token::Else,
         "while" => Token::While,
         "for" => Token::For,
+        "int" => Token::TypeDec(Type::Int),
         _ => panic!(format!("reserved_words_map: {}", str)),
     }
 }
@@ -137,6 +144,7 @@ fn symbol_to_token_mapper(c: char) -> Result<Token, String> {
         ';' => Ok(Token::Semicolon),
         '{' => Ok(Token::LBrace),
         '}' => Ok(Token::RBrace),
+        ',' => Ok(Token::Comma),
         _ => Err(format!("symbol_to_token_mapper error: {}", c)),
     }
 }
