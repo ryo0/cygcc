@@ -233,7 +233,6 @@ fn code_gen_for(
         None => {}
         _ => {
             code_gen_option_exp(exp2, state_holder);
-            pop("rax".to_string(), state_holder);
             println!("  cmp rax, 0");
             println!("  je {}", jend_label);
         }
@@ -249,7 +248,6 @@ fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
     let (end_label, jend_label) = state_holder.get_label("endWhile".to_string());
     println!("{}", begin_label);
     code_gen_exp(cond, state_holder);
-    pop("rax".to_string(), state_holder);
     println!("  cmp rax, 0");
     println!("  je {}", jend_label);
     code_gen(vec![stmt], state_holder);
