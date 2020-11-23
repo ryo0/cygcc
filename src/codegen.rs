@@ -8,6 +8,7 @@ use std::collections::HashMap;
 static argReg: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 
 const LOCAL_VAR_OFFSET: i32 = 8;
+const RSP_CONST: i32 = 16;
 
 pub fn start_to_gen_code(p: Program) {
     println!(".intel_syntax noprefix");
@@ -78,7 +79,7 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
                 params,
                 body,
             } => {
-                code_gen_fun(*fun, params, body);
+                code_gen_func(*fun, params, body);
             }
             _ => {
                 panic!("未対応");
@@ -87,12 +88,44 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
     }
 }
 
-fn code_gen_fun_call(f: Exp, args: Vec<Exp>) {}
+fn code_gen_func_call(f: Exp, args: Vec<Exp>) {}
 
-fn code_gen_fun(f: Exp, params: Vec<Exp>, body: Vec<Stmt>) {
+// Round up `n` to the nearest multiple of `align`. For instance,
+// align_to(5, 8) returns 8 and align_to(11, 8) returns 16.
+fn align_to(n: i32, align: i32) -> i32 {
+    return (n + align - 1) / align * align;
+}
+
+fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>) {
+    let mut state_holder = new_state_holder();
+    let name = match f {
+        Exp::Var(v) => v,
+        _ => panic!(format!("error, func nameがVarでない: {:?}", f)),
+    };
+    let stack_size = params.len() as i32 * LOCAL_VAR_OFFSET;
+    let stack_size = align_to(stack_size, RSP_CONST);
+    println!("  .globl {}", name);
+    println!("{}:", name);
+
+    // Prologue
     println!("  push rbp");
     println!("  mov rbp, rsp");
     println!("  sub rsp, 16");
+
+    let mut i = 0;
+    for v in params {
+        let v = match v {
+            Exp::Var(v) => v,
+            _ => panic!(format!("error in code_gen_func paramsがVarでない")),
+        };
+        println!("  mov {}, {}(rbp)", argReg[i], state_holder.get_offset(v));
+    }
+    code_gen(body, &mut state_holder);
+
+    println!(".L.return.{}:", name);
+    println!("  mov rbp, rsp");
+    println!("  pop rbp");
+    println!("  ret");
 }
 
 fn code_gen_for(
@@ -120,6 +153,7 @@ fn code_gen_for(
     println!("  jmp {}", jbegin_label);
     println!("{}", end_label);
 }
+
 fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
     let (begin_label, jbegin_label) = state_holder.get_label("beginWhile".to_string());
     let (end_label, jend_label) = state_holder.get_label("endWhile".to_string());
@@ -182,7 +216,7 @@ fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
 pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
     match exp {
         FuncCall { fun, args } => {
-            code_gen_fun_call(*fun, args);
+            code_gen_func_call(*fun, args);
         }
         InfixExp { left, op, right } => {
             match op {
@@ -263,6 +297,14 @@ pub struct StateHolder {
     offset_map: HashMap<String, i32>,
     max_offset: i32,
     label_counter: i32,
+}
+
+fn new_state_holder() -> StateHolder {
+    return StateHolder {
+        offset_map: HashMap::new(),
+        max_offset: 0,
+        label_counter: 0,
+    };
 }
 
 impl StateHolder {
