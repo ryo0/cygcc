@@ -10,19 +10,29 @@ static ARG_REG: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 const LOCAL_VAR_OFFSET: i32 = 8;
 const RSP_CONST: i32 = 16;
 
+fn push(val: String, state_holder: &mut StateHolder) {
+    println!("  push {}", val);
+    state_holder.push_depth();
+}
+
+fn pop(val: String, state_holder: &mut StateHolder) {
+    println!("  pop {}", val);
+    state_holder.pop_depth();
+}
+
 pub fn start(p: Program) {
     println!(".intel_syntax noprefix");
     // println!(".globl main");
     // println!("main:");
 
-    // println!("  push rbp");
+    // push("rbp".to_string().to_string(), state_holder);
     // println!("  mov rbp, rsp");
     // println!("  sub rsp, 208");
 
     start_to_code_gen(p);
 
     // println!("  mov rsp, rbp");
-    // println!("  pop rbp");
+    // pop("rbp".to_string(), state_holder);
     // println!("  ret");
 }
 
@@ -37,7 +47,7 @@ fn code_gen_option_exp(exp: Option<Exp>, state_holder: &mut StateHolder) {
 
 fn start_to_code_gen(p: Program) {
     let mut state_holder = new_state_holder();
-    code_gen(p, &mut state_holder)
+    code_gen(p, &mut state_holder);
 }
 
 pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
@@ -45,7 +55,7 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
         match stmt {
             Stmt::Exp(exp) => {
                 code_gen_exp(exp, state_holder);
-                println!("  pop rax");
+                pop("rax".to_string(), state_holder);
             }
             Stmt::Return(exp) => {
                 code_gen_exp(exp, state_holder);
@@ -89,11 +99,11 @@ fn code_gen_func_call(f: Exp, args: Vec<Exp>, state_holder: &mut StateHolder) {
     let len = args.clone().len();
     for arg in args {
         code_gen_exp(arg, state_holder);
-        println!("  push rax");
+        push("rax".to_string(), state_holder);
     }
     if len > 0 {
         for i in (len - 1)..0 {
-            println!("  pop {}", ARG_REG[i]);
+            pop(ARG_REG[i].to_string(), state_holder);
         }
     }
     println!("  mov rax, 0");
@@ -119,7 +129,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
     println!("{}:", name);
 
     // Prologue
-    println!("  push rbp");
+    push("rbp".to_string(), state_holder);
     println!("  mov rbp, rsp");
     println!("  sub rsp, {}", stack_size);
 
@@ -136,7 +146,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
 
     println!(".L.return.{}:", name);
     println!("  mov rsp, rbp");
-    println!("  pop rbp");
+    pop("rbp".to_string(), state_holder);
     println!("  ret");
 }
 
@@ -155,7 +165,7 @@ fn code_gen_for(
         None => {}
         _ => {
             code_gen_option_exp(exp2, state_holder);
-            println!("  pop rax");
+            pop("rax".to_string(), state_holder);
             println!("  cmp rax, 0");
             println!("  je {}", jend_label);
         }
@@ -171,7 +181,7 @@ fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
     let (end_label, jend_label) = state_holder.get_label("endWhile".to_string());
     println!("{}", begin_label);
     code_gen_exp(cond, state_holder);
-    println!("  pop rax");
+    pop("rax".to_string(), state_holder);
     println!("  cmp rax, 0");
     println!("  je {}", jend_label);
     code_gen(vec![stmt], state_holder);
@@ -185,7 +195,7 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
         Some(stmt2) => {
             let (else_label, jelse_label) = state_holder.get_label("if".to_string());
             let (if_label, jif_label) = state_holder.get_label("else".to_string());
-            println!("  pop rax");
+            pop("rax".to_string(), state_holder);
             println!("  cmp rax, 0");
             println!("  je {}", jelse_label);
             code_gen(vec![stmt1], state_holder);
@@ -196,7 +206,7 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
         }
         None => {
             let (label, jlabel) = state_holder.get_label("if".to_string());
-            println!("  pop rax");
+            pop("rax".to_string(), state_holder);
             println!("  cmp rax, 0");
             println!("  je {}", jlabel);
             code_gen(vec![stmt1], state_holder);
@@ -205,10 +215,10 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
     }
 }
 
-fn code_gen_var(var_name: String, offset: &mut StateHolder) {
+fn code_gen_var(var_name: String, state_holder: &mut StateHolder) {
     println!("  mov rax, rbp");
-    println!("  sub rax, {}", offset.get_offset(var_name));
-    println!("  push rax");
+    println!("  sub rax, {}", state_holder.get_offset(var_name));
+    push("rax".to_string(), state_holder);
 }
 
 fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
@@ -220,10 +230,10 @@ fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
     }
     code_gen_exp(right, state_holder);
 
-    println!("  pop rdi");
-    println!("  pop rax");
+    pop("rdi".to_string(), state_holder);
+    pop("rax".to_string(), state_holder);
     println!("  mov [rax], rdi");
-    println!("  push rdi"); // 代入の結果である右辺値をスタックに残しておきたいためこうする
+    push("rdi".to_string(), state_holder); // 代入の結果である右辺値をスタックに残しておきたいためこうする
 }
 pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
     match exp {
@@ -241,8 +251,8 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
             code_gen_exp(*left.clone(), state_holder);
             code_gen_exp(*right.clone(), state_holder);
 
-            println!("  pop rdi");
-            println!("  pop rax");
+            pop("rdi".to_string(), state_holder);
+            pop("rax".to_string(), state_holder);
             match op {
                 Plus => {
                     println!("  add rax, rdi");
@@ -291,16 +301,16 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
                     panic!("error");
                 }
             }
-            println!("  push rax");
+            push("rax".to_string(), state_holder);
         }
         Int(i) => {
-            println!("  push {}", i);
+            push(i.to_string(), state_holder);
         }
         Var(v) => {
             code_gen_var(v, state_holder);
-            println!("  pop rax");
+            pop("rax".to_string(), state_holder);
             println!("  mov rax, [rax]");
-            println!("  push rax");
+            push("rax".to_string(), state_holder);
         }
     }
 }
@@ -310,6 +320,7 @@ pub struct StateHolder {
     max_offset: i32,
     label_counter: i32,
     current_fun_name: String,
+    depth: i32,
 }
 
 fn new_state_holder() -> StateHolder {
@@ -318,10 +329,20 @@ fn new_state_holder() -> StateHolder {
         max_offset: 0,
         label_counter: 0,
         current_fun_name: "".to_string(),
+        depth: 0,
     };
 }
 
 impl StateHolder {
+    fn push_depth(&mut self) {
+        self.depth += 1;
+    }
+    fn pop_depth(&mut self) {
+        self.depth -= 1;
+    }
+    fn assert_depth(&mut self) {
+        assert_eq!(self.depth, 0);
+    }
     fn set_fun_name(&mut self, name: String) {
         self.current_fun_name = name;
     }
