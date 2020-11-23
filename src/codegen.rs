@@ -305,6 +305,7 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
             push("rax".to_string(), state_holder);
         }
         Int(i) => {
+            push(i.to_string(), state_holder);
             println!("  mov rax, {}", i);
         }
         Var(v) => {
