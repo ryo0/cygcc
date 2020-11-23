@@ -14,6 +14,7 @@ assert() {
     exit 1
   fi
 }
+assert 32 'int main() { return ret32(); } int ret32() { return 32; }'
 
 assert 47 'int main(){ return 5 + 6 * 7; }'
 assert 15 'int main(){ return 5 * (9 - 6); }'

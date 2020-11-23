@@ -249,11 +249,10 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
                 }
                 _ => {}
             }
-            code_gen_exp(*left.clone(), state_holder);
             code_gen_exp(*right.clone(), state_holder);
-
+            push("rax".to_string(), state_holder);
+            code_gen_exp(*left.clone(), state_holder);
             pop("rdi".to_string(), state_holder);
-            pop("rax".to_string(), state_holder);
             match op {
                 Plus => {
                     println!("  add rax, rdi");
@@ -302,17 +301,14 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
                     panic!("error");
                 }
             }
-            push("rax".to_string(), state_holder);
         }
         Int(i) => {
-            push(i.to_string(), state_holder);
             println!("  mov rax, {}", i);
         }
         Var(v) => {
             code_gen_var(v, state_holder);
             pop("rax".to_string(), state_holder);
             println!("  mov rax, [rax]");
-            push("rax".to_string(), state_holder);
         }
     }
 }
