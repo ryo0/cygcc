@@ -122,6 +122,67 @@ fn align_to(n: i32, align: i32) -> i32 {
     return (n + align - 1) / align * align;
 }
 
+fn get_locals_stmts(body: Vec<Stmt>) -> i32 {
+    let mut c = 0;
+    for s in body {
+        c += get_locals_stmt(s);
+    }
+    c
+}
+
+fn get_locals_option_exp(exp: Box<Option<Exp>>) -> i32 {
+    match *exp {
+        None => 0,
+        Some(exp) => get_locals_exp(exp),
+    }
+}
+
+fn get_locals_stmt(stmt: Stmt) -> i32 {
+    match stmt {
+        Stmt::Exp(exp) => get_locals_exp(exp),
+        Stmt::Return(exp) => get_locals_exp(exp),
+        Stmt::Block(stmts) => get_locals_stmts(stmts),
+        Stmt::If { cond, stmt1, stmt2 } => {
+            let c2 = match *stmt2 {
+                Some(stmt) => get_locals_stmt(stmt),
+                None => 0,
+            };
+            get_locals_exp(*cond) + get_locals_stmt(*stmt1) + c2
+        }
+        Stmt::While { cond, stmt } => get_locals_exp(*cond) + get_locals_stmt(*stmt),
+        Stmt::For {
+            exp1,
+            exp2,
+            exp3,
+            stmt,
+        } => {
+            get_locals_option_exp(exp1)
+                + get_locals_option_exp(exp2)
+                + get_locals_option_exp(exp3)
+                + get_locals_stmt(*stmt)
+        }
+        Stmt::Func {
+            t,
+            fun,
+            params,
+            body,
+        } => get_locals_stmts(body),
+        _ => {
+            panic!("未対応");
+        }
+    }
+}
+
+fn get_locals_exp(exp: Exp) -> i32 {
+    match exp {
+        Exp::InfixExp { left, op, right } => match op {
+            Assign => get_locals_exp(*left) + 1 + get_locals_exp(*right),
+            _ => get_locals_exp(*left) + get_locals_exp(*right),
+        },
+        _ => 0,
+    }
+}
+
 fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut StateHolder) {
     let name = match f {
         Exp::Var(v) => v,
@@ -129,7 +190,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
     };
     state_holder.set_fun_name(name.clone());
     state_holder.reset_offset();
-    let stack_size = params.len() as i32 * LOCAL_VAR_OFFSET;
+    let stack_size = (params.len() as i32 + get_locals_stmts(body.clone())) * LOCAL_VAR_OFFSET;
     let stack_size = align_to(stack_size, RSP_CONST);
     println!(".global {}", name);
     println!("{}:", name);
