@@ -129,7 +129,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
     println!("{}:", name);
 
     // Prologue
-    push("rbp".to_string(), state_holder);
+    println!(" push rbp");
     println!("  mov rbp, rsp");
     println!("  sub rsp, {}", stack_size);
 
@@ -147,7 +147,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
 
     println!(".L.return.{}:", name);
     println!("  mov rsp, rbp");
-    pop("rbp".to_string(), state_holder);
+    println!("  pop rbp");
     println!("  ret");
 }
 
