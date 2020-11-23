@@ -263,7 +263,6 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
         Some(stmt2) => {
             let (else_label, jelse_label) = state_holder.get_label("if".to_string());
             let (if_label, jif_label) = state_holder.get_label("else".to_string());
-            pop("rax".to_string(), state_holder);
             println!("  cmp rax, 0");
             println!("  je {}", jelse_label);
             code_gen(vec![stmt1], state_holder);
@@ -274,7 +273,6 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
         }
         None => {
             let (label, jlabel) = state_holder.get_label("if".to_string());
-            pop("rax".to_string(), state_holder);
             println!("  cmp rax, 0");
             println!("  je {}", jlabel);
             code_gen(vec![stmt1], state_holder);
