@@ -143,6 +143,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
         i += 1;
     }
     code_gen(body, state_holder);
+    state_holder.assert_depth();
 
     println!(".L.return.{}:", name);
     println!("  mov rsp, rbp");
