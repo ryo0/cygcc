@@ -293,6 +293,7 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
         }
         Var(v) => {
             println!("  lea rax, [rbp + {}]", state_holder.get_offset(v));
+            println!("  mov rax, [rax]");
         }
     }
 }
