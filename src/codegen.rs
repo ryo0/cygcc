@@ -223,7 +223,11 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
 }
 
 fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
-    code_gen_exp(left, state_holder);
+    let left = match left {
+        Exp::Var(v) => v,
+        _ => panic!("error"),
+    };
+    println!("  lea rax, [rbp + {}]", state_holder.get_offset(left));
     push("rax".to_string(), state_holder);
     code_gen_exp(right, state_holder);
     pop("rdi".to_string(), state_holder);

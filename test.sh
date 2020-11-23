@@ -55,6 +55,8 @@ assert 1 'int main(){ return 1 - 1 * 2 + 3 < 2*2; }'
 assert 0 'int main(){ return 1 < 1; }'  
 assert 1 'int main(){ return 1 <= 1; }' 
 
+assert 3 'int main(){ return a=3; }'
+assert 3 'int main(){ a=3; return 3; }'
 assert 3 'int main(){ a = 3; return a; }'  
 assert 4 'int main(){ a = b = 2;return a + b; }'  
 assert 8 'int main(){  a = 3; z = 5; return a + z; }'  
@@ -62,7 +64,6 @@ assert 8 'int main(){  foo=3; bar = 5; return foo+bar; }'
 assert 15 'int main(){  foo= bar = hoge = 5; return foo+bar+hoge; }' 
 assert 8 'int main(){  foo= bar = 2; return 3*foo+bar; }' 
 assert 21 'int main(){  a = 3; foo= bar = hoge = a * 2;return foo + bar + hoge + a; }' 
-
 
 assert 3 'int main(){ a=3; return a; }'
 assert 8 'int main(){  a=3; z=5; return a+z; }'
