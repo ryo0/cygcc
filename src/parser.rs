@@ -206,6 +206,7 @@ fn parse_block<'a>(
     acm.push(stmt);
     match rest {
         [Token::RBrace, rest @ ..] => Ok((acm.clone(), rest)),
+        [] => Ok((acm.clone(), &[])),
         _ => parse_block(rest, acm),
     }
 }
