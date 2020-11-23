@@ -115,7 +115,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
     state_holder.reset_offset();
     let stack_size = params.len() as i32 * LOCAL_VAR_OFFSET;
     let stack_size = align_to(stack_size, RSP_CONST);
-    println!("  .globl {}", name);
+    println!(".global {}", name);
     println!("{}:", name);
 
     // Prologue
