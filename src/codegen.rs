@@ -5,25 +5,25 @@ use crate::parser::Program;
 use crate::parser::Stmt;
 use std::collections::HashMap;
 
-static argReg: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+static ARG_REG: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 
 const LOCAL_VAR_OFFSET: i32 = 8;
 const RSP_CONST: i32 = 16;
 
-pub fn start_to_gen_code(p: Program) {
+pub fn start(p: Program) {
     println!(".intel_syntax noprefix");
-    println!(".globl main");
-    println!("main:");
+    // println!(".globl main");
+    // println!("main:");
 
-    println!("  push rbp");
-    println!("  mov rbp, rsp");
-    println!("  sub rsp, 208");
+    // println!("  push rbp");
+    // println!("  mov rbp, rsp");
+    // println!("  sub rsp, 208");
 
     start_to_code_gen(p);
 
-    println!("  mov rsp, rbp");
-    println!("  pop rbp");
-    println!("  ret");
+    // println!("  mov rsp, rbp");
+    // println!("  pop rbp");
+    // println!("  ret");
 }
 
 fn code_gen_option_exp(exp: Option<Exp>, state_holder: &mut StateHolder) {
@@ -36,11 +36,7 @@ fn code_gen_option_exp(exp: Option<Exp>, state_holder: &mut StateHolder) {
 }
 
 fn start_to_code_gen(p: Program) {
-    let mut state_holder = StateHolder {
-        offset_map: HashMap::new(),
-        max_offset: 0,
-        label_counter: 0,
-    };
+    let mut state_holder = new_state_holder();
     code_gen(p, &mut state_holder)
 }
 
@@ -53,10 +49,7 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
             }
             Stmt::Return(exp) => {
                 code_gen_exp(exp, state_holder);
-                println!("  pop rax");
-                println!("  mov rsp, rbp");
-                println!("  pop rbp");
-                println!("  ret");
+                println!("  jmp .L.return.{}", state_holder.get_fun_name());
             }
             Stmt::Block(stmts) => code_gen(stmts, state_holder),
             Stmt::If { cond, stmt1, stmt2 } => {
@@ -79,7 +72,7 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
                 params,
                 body,
             } => {
-                code_gen_func(*fun, params, body);
+                code_gen_func(*fun, params, body, state_holder);
             }
             _ => {
                 panic!("未対応");
@@ -88,7 +81,24 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
     }
 }
 
-fn code_gen_func_call(f: Exp, args: Vec<Exp>) {}
+fn code_gen_func_call(f: Exp, args: Vec<Exp>, state_holder: &mut StateHolder) {
+    let name = match f {
+        Exp::Var(v) => v,
+        _ => panic!("error in code_gen_func_call, func nameがVarでない"),
+    };
+    let len = args.clone().len();
+    for arg in args {
+        code_gen_exp(arg, state_holder);
+        println!("  push rax");
+    }
+    if len > 0 {
+        for i in (len - 1)..0 {
+            println!("  pop {}", ARG_REG[i]);
+        }
+    }
+    println!("  mov rax, 0");
+    println!("  call {}", name)
+}
 
 // Round up `n` to the nearest multiple of `align`. For instance,
 // align_to(5, 8) returns 8 and align_to(11, 8) returns 16.
@@ -96,12 +106,13 @@ fn align_to(n: i32, align: i32) -> i32 {
     return (n + align - 1) / align * align;
 }
 
-fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>) {
-    let mut state_holder = new_state_holder();
+fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut StateHolder) {
     let name = match f {
         Exp::Var(v) => v,
         _ => panic!(format!("error, func nameがVarでない: {:?}", f)),
     };
+    state_holder.set_fun_name(name.clone());
+    state_holder.reset_offset();
     let stack_size = params.len() as i32 * LOCAL_VAR_OFFSET;
     let stack_size = align_to(stack_size, RSP_CONST);
     println!("  .globl {}", name);
@@ -110,7 +121,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>) {
     // Prologue
     println!("  push rbp");
     println!("  mov rbp, rsp");
-    println!("  sub {}, rsp", stack_size);
+    println!("  sub rsp, {}", stack_size);
 
     let mut i = 0;
     for v in params {
@@ -118,13 +129,13 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>) {
             Exp::Var(v) => v,
             _ => panic!(format!("error in code_gen_func paramsがVarでない")),
         };
-        println!("  mov {}, {}(rbp)", argReg[i], state_holder.get_offset(v));
+        println!("  mov [rbp-{}], {}", state_holder.get_offset(v), ARG_REG[i]);
         i += 1;
     }
-    code_gen(body, &mut state_holder);
+    code_gen(body, state_holder);
 
     println!(".L.return.{}:", name);
-    println!("  mov rbp, rsp");
+    println!("  mov rsp, rbp");
     println!("  pop rbp");
     println!("  ret");
 }
@@ -217,7 +228,7 @@ fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
 pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
     match exp {
         FuncCall { fun, args } => {
-            code_gen_func_call(*fun, args);
+            code_gen_func_call(*fun, args, state_holder);
         }
         InfixExp { left, op, right } => {
             match op {
@@ -298,6 +309,7 @@ pub struct StateHolder {
     offset_map: HashMap<String, i32>,
     max_offset: i32,
     label_counter: i32,
+    current_fun_name: String,
 }
 
 fn new_state_holder() -> StateHolder {
@@ -305,10 +317,17 @@ fn new_state_holder() -> StateHolder {
         offset_map: HashMap::new(),
         max_offset: 0,
         label_counter: 0,
+        current_fun_name: "".to_string(),
     };
 }
 
 impl StateHolder {
+    fn set_fun_name(&mut self, name: String) {
+        self.current_fun_name = name;
+    }
+    fn get_fun_name(&mut self) -> String {
+        self.current_fun_name.clone()
+    }
     fn get_label(&mut self, prefix: String) -> (String, String) {
         let jump_label = format!(".L.{}{}", prefix, self.get_label_counter());
         let label = format!("{}:", jump_label);
@@ -336,11 +355,7 @@ impl StateHolder {
 
 #[test]
 fn test_map() {
-    let mut state_holder = StateHolder {
-        offset_map: HashMap::new(),
-        max_offset: 0,
-        label_counter: 0,
-    };
+    let mut state_holder = new_state_holder();
     let offset = state_holder.get_offset("a".to_string());
     assert_eq!(offset, 0);
     let offset = state_holder.get_offset("a".to_string());

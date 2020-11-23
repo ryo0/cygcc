@@ -2,7 +2,7 @@ mod codegen;
 mod eval;
 mod lexer;
 mod parser;
-use crate::codegen::start_to_gen_code;
+use crate::codegen::start;
 use crate::lexer::tokenize;
 use crate::parser::parse_program;
 use std::env;
@@ -21,5 +21,5 @@ fn main() {
         Ok(stmts) => stmts,
         Err(err) => panic!(err),
     };
-    start_to_gen_code(stmts);
+    start(stmts);
 }
