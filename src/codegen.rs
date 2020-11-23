@@ -106,7 +106,14 @@ fn code_gen_func_call(f: Exp, args: Vec<Exp>, state_holder: &mut StateHolder) {
         }
     }
     println!("  mov rax, 0");
-    println!("  call {}", name)
+
+    if state_holder.depth % 2 == 0 {
+        println!("  call {}", name)
+    } else {
+        println!("  sub rsp, 8");
+        println!("  call {}", name);
+        println!("  add rsp, 8");
+    }
 }
 
 // Round up `n` to the nearest multiple of `align`. For instance,
