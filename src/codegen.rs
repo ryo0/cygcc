@@ -229,12 +229,10 @@ fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
         }
         _ => panic!(format!("左辺値error: {:?}", left)),
     }
+    push("rax".to_string(), state_holder);
     code_gen_exp(right, state_holder);
-
     pop("rdi".to_string(), state_holder);
-    pop("rax".to_string(), state_holder);
-    println!("  mov [rax], rdi");
-    push("rdi".to_string(), state_holder); // 代入の結果である右辺値をスタックに残しておきたいためこうする
+    println!("  mov [rdi], rax");
 }
 pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
     match exp {
