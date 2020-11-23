@@ -227,7 +227,7 @@ fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
         Exp::Var(v) => v,
         _ => panic!("error"),
     };
-    println!("  lea rax, [rbp + {}]", state_holder.get_offset(left));
+    println!("  lea rax, [{} + rbp]", state_holder.get_offset(left));
 
     push("rax".to_string(), state_holder);
 
@@ -306,7 +306,7 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
             println!("  mov rax, {}", i);
         }
         Var(v) => {
-            println!("  lea rax, [rbp + {}]", state_holder.get_offset(v));
+            println!("  lea rax, [{} + rbp]", state_holder.get_offset(v));
             println!("  mov rax, [rax]");
         }
     }
