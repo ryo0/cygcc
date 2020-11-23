@@ -55,7 +55,6 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
         match stmt {
             Stmt::Exp(exp) => {
                 code_gen_exp(exp, state_holder);
-                pop("rax".to_string(), state_holder);
             }
             Stmt::Return(exp) => {
                 code_gen_exp(exp, state_holder);
@@ -216,19 +215,8 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
     }
 }
 
-fn code_gen_var(var_name: String, state_holder: &mut StateHolder) {
-    println!("  mov rax, rbp");
-    println!("  sub rax, {}", state_holder.get_offset(var_name));
-    push("rax".to_string(), state_holder);
-}
-
 fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
-    match left {
-        Var(var) => {
-            code_gen_var(var.clone(), state_holder);
-        }
-        _ => panic!(format!("左辺値error: {:?}", left)),
-    }
+    code_gen_exp(left, state_holder);
     push("rax".to_string(), state_holder);
     code_gen_exp(right, state_holder);
     pop("rdi".to_string(), state_holder);
@@ -304,9 +292,7 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
             println!("  mov rax, {}", i);
         }
         Var(v) => {
-            code_gen_var(v, state_holder);
-            pop("rax".to_string(), state_holder);
-            println!("  mov rax, [rax]");
+            println!("  lea rax, [rbp + {}]", state_holder.get_offset(v));
         }
     }
 }
@@ -338,6 +324,7 @@ impl StateHolder {
     }
     fn assert_depth(&mut self) {
         assert_eq!(self.depth, 0);
+        // println!("self.depth, {}", self.depth);
     }
     fn set_fun_name(&mut self, name: String) {
         self.current_fun_name = name;
