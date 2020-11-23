@@ -110,7 +110,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>) {
     // Prologue
     println!("  push rbp");
     println!("  mov rbp, rsp");
-    println!("  sub rsp, 16");
+    println!("  sub {}, rsp", stack_size);
 
     let mut i = 0;
     for v in params {
@@ -119,6 +119,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>) {
             _ => panic!(format!("error in code_gen_func paramsがVarでない")),
         };
         println!("  mov {}, {}(rbp)", argReg[i], state_holder.get_offset(v));
+        i += 1;
     }
     code_gen(body, &mut state_holder);
 
