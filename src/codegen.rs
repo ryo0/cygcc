@@ -308,10 +308,15 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
                 }
                 _ => {}
             }
+            // ちょっと無駄が多いコードになったが、
+            // こうした方が左辺→右辺という計算順序が遵守されるから
+            // いいかな、という判断。
+            code_gen_exp(*left.clone(), state_holder);
+            push("rax".to_string(), state_holder);
             code_gen_exp(*right.clone(), state_holder);
             push("rax".to_string(), state_holder);
-            code_gen_exp(*left.clone(), state_holder);
             pop("rdi".to_string(), state_holder);
+            pop("rax".to_string(), state_holder);
             match op {
                 Plus => {
                     println!("  add rax, rdi");
