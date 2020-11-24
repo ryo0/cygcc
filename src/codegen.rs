@@ -100,10 +100,8 @@ fn code_gen_func_call(f: Exp, args: Vec<Exp>, state_holder: &mut StateHolder) {
         code_gen_exp(arg, state_holder);
         push("rax".to_string(), state_holder);
     }
-    if len > 0 {
-        for i in (len - 1)..0 {
-            pop(ARG_REG[i].to_string(), state_holder);
-        }
+    for i in (0..len).rev() {
+        pop(ARG_REG[i].to_string(), state_holder);
     }
     println!("  mov rax, 0");
 
