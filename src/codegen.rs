@@ -204,7 +204,11 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
             Exp::Var(v) => v,
             _ => panic!(format!("error in code_gen_func paramsがVarでない")),
         };
-        println!("  mov [rbp-{}], {}", state_holder.get_offset(v), ARG_REG[i]);
+        println!(
+            "  mov [{} + rbp], {}",
+            state_holder.get_offset(v),
+            ARG_REG[i]
+        );
         i += 1;
     }
     code_gen(body, state_holder);
