@@ -121,5 +121,7 @@ assert 7 'int main() { return add2(3,4); } int add2(x, y) { return x+y; }'
 assert 1 'int main() { return sub2(4,3); } int sub2( x, y) { return x-y; }'
 assert 55 'int main() { return fib(9); } int fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
 
+assert 3 'int main() { a = 3; return fib(a); } int fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
+
 assert 8 'int main() { return add2_plus1(3,4); } int add2_plus1(x, y) { p = 1; return x+y +p; }'
 echo OK
