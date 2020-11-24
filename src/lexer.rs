@@ -167,7 +167,7 @@ fn get_num<'a>(s: &'a [char], acm: String) -> Result<(Token, &'a [char]), String
 
 fn get_var<'a>(s: &'a [char], acm: String) -> Result<(Token, &'a [char]), String> {
     match s {
-        [first, rest @ ..] if first.is_alphabetic() || first.is_numeric() => {
+        [first, rest @ ..] if *first == '_' || first.is_alphabetic() || first.is_numeric() => {
             let acm = format!("{}{}", acm, first);
             get_var(rest, acm)
         }
