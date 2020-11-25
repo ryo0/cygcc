@@ -22,18 +22,7 @@ fn pop(val: String, state_holder: &mut StateHolder) {
 
 pub fn start(p: Program) {
     println!(".intel_syntax noprefix");
-    // println!(".globl main");
-    // println!("main:");
-
-    // push("rbp".to_string().to_string(), state_holder);
-    // println!("  mov rbp, rsp");
-    // println!("  sub rsp, 208");
-
     start_to_code_gen(p);
-
-    // println!("  mov rsp, rbp");
-    // pop("rbp".to_string(), state_holder);
-    // println!("  ret");
 }
 
 fn code_gen_option_exp(exp: Option<Exp>, state_holder: &mut StateHolder) {
@@ -181,6 +170,11 @@ fn get_locals_exp(exp: Exp) -> i32 {
     }
 }
 
+fn get_stack_size(params: Vec<Exp>, body: Vec<Stmt>) -> i32 {
+    let stack_size = (params.len() as i32 + get_locals_stmts(body.clone())) * LOCAL_VAR_OFFSET;
+    align_to(stack_size, RSP_CONST)
+}
+
 fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut StateHolder) {
     let name = match f {
         Exp::Var(v) => v,
@@ -188,8 +182,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
     };
     state_holder.set_fun_name(name.clone());
     state_holder.reset_offset();
-    let stack_size = (params.len() as i32 + get_locals_stmts(body.clone())) * LOCAL_VAR_OFFSET;
-    let stack_size = align_to(stack_size, RSP_CONST);
+    let stack_size = get_stack_size(params.clone(), body.clone());
     println!(".global {}", name);
     println!("{}:", name);
 
@@ -403,7 +396,6 @@ impl StateHolder {
     }
     fn assert_depth(&mut self) {
         assert_eq!(self.depth, 0);
-        // println!("self.depth, {}", self.depth);
     }
     fn set_fun_name(&mut self, name: String) {
         self.current_fun_name = name;
