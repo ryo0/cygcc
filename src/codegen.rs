@@ -28,7 +28,7 @@ pub fn start(p: Program) {
 fn code_gen_option_exp(exp: Option<Exp>, state_holder: &mut StateHolder) {
     match exp {
         None => {}
-        Some(exp) => {
+        Some(ref exp) => {
             code_gen_exp(exp, state_holder);
         }
     }
@@ -42,10 +42,10 @@ fn start_to_code_gen(p: Program) {
 pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
     for stmt in p {
         match stmt {
-            Stmt::Exp(exp) => {
+            Stmt::Exp(ref exp) => {
                 code_gen_exp(exp, state_holder);
             }
-            Stmt::Return(exp) => {
+            Stmt::Return(ref exp) => {
                 code_gen_exp(exp, state_holder);
                 println!("  jmp .L.return.{}", state_holder.get_fun_name());
             }
@@ -79,12 +79,12 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
     }
 }
 
-fn code_gen_func_call(f: Exp, args: Vec<Exp>, state_holder: &mut StateHolder) {
+fn code_gen_func_call(f: &Exp, args: &Vec<Exp>, state_holder: &mut StateHolder) {
     let name = match f {
         Exp::Var(v) => v,
         _ => panic!("error in code_gen_func_call, func nameがVarでない"),
     };
-    let len = args.clone().len();
+    let len = (&args).len();
     for arg in args {
         code_gen_exp(arg, state_holder);
         push("rax".to_string(), state_holder);
@@ -109,7 +109,7 @@ fn align_to(n: i32, align: i32) -> i32 {
     return (n + align - 1) / align * align;
 }
 
-fn get_locals_stmts(body: Vec<Stmt>) -> i32 {
+fn get_locals_stmts(body: &Vec<Stmt>) -> i32 {
     let mut c = 0;
     for s in body {
         c += get_locals_stmt(s);
@@ -117,26 +117,26 @@ fn get_locals_stmts(body: Vec<Stmt>) -> i32 {
     c
 }
 
-fn get_locals_option_exp(exp: Box<Option<Exp>>) -> i32 {
-    match *exp {
+fn get_locals_option_exp(exp: &Box<Option<Exp>>) -> i32 {
+    match **exp {
         None => 0,
-        Some(exp) => get_locals_exp(exp),
+        Some(ref exp) => get_locals_exp(exp),
     }
 }
 
-fn get_locals_stmt(stmt: Stmt) -> i32 {
+fn get_locals_stmt(stmt: &Stmt) -> i32 {
     match stmt {
-        Stmt::Exp(exp) => get_locals_exp(exp),
-        Stmt::Return(exp) => get_locals_exp(exp),
-        Stmt::Block(stmts) => get_locals_stmts(stmts),
+        Stmt::Exp(ref exp) => get_locals_exp(exp),
+        Stmt::Return(ref exp) => get_locals_exp(exp),
+        Stmt::Block(ref stmts) => get_locals_stmts(stmts),
         Stmt::If { cond, stmt1, stmt2 } => {
-            let c2 = match *stmt2 {
-                Some(stmt) => get_locals_stmt(stmt),
+            let c2 = match **stmt2 {
+                Some(ref stmt) => get_locals_stmt(stmt),
                 None => 0,
             };
-            get_locals_exp(*cond) + get_locals_stmt(*stmt1) + c2
+            get_locals_exp(&cond) + get_locals_stmt(&stmt1) + c2
         }
-        Stmt::While { cond, stmt } => get_locals_exp(*cond) + get_locals_stmt(*stmt),
+        Stmt::While { cond, stmt } => get_locals_exp(&cond) + get_locals_stmt(&stmt),
         Stmt::For {
             exp1,
             exp2,
@@ -146,32 +146,32 @@ fn get_locals_stmt(stmt: Stmt) -> i32 {
             get_locals_option_exp(exp1)
                 + get_locals_option_exp(exp2)
                 + get_locals_option_exp(exp3)
-                + get_locals_stmt(*stmt)
+                + get_locals_stmt(&stmt)
         }
         Stmt::Func {
             t,
             fun,
             params,
             body,
-        } => get_locals_stmts(body),
+        } => get_locals_stmts(&body),
         _ => {
             panic!("未対応");
         }
     }
 }
 
-fn get_locals_exp(exp: Exp) -> i32 {
+fn get_locals_exp(exp: &Exp) -> i32 {
     match exp {
         Exp::InfixExp { left, op, right } => match op {
-            Assign => get_locals_exp(*left) + 1 + get_locals_exp(*right),
-            _ => get_locals_exp(*left) + get_locals_exp(*right),
+            Assign => get_locals_exp(left) + 1 + get_locals_exp(right),
+            _ => get_locals_exp(left) + get_locals_exp(right),
         },
         _ => 0,
     }
 }
 
-fn get_stack_size(params: Vec<Exp>, body: Vec<Stmt>) -> i32 {
-    let stack_size = (params.len() as i32 + get_locals_stmts(body.clone())) * LOCAL_VAR_OFFSET;
+fn get_stack_size(params: &Vec<Exp>, body: &Vec<Stmt>) -> i32 {
+    let stack_size = params.len() as i32 + get_locals_stmts(&body) * LOCAL_VAR_OFFSET;
     align_to(stack_size, RSP_CONST)
 }
 
@@ -182,7 +182,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
     };
     state_holder.set_fun_name(name.clone());
     state_holder.reset_offset();
-    let stack_size = get_stack_size(params.clone(), body.clone());
+    let stack_size = get_stack_size(&params, &body);
     println!(".global {}", name);
     println!("{}:", name);
 
@@ -199,7 +199,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
         };
         println!(
             "  mov [{} + rbp], {}",
-            state_holder.get_offset(v),
+            state_holder.get_offset(&v),
             ARG_REG[i]
         );
         i += 1;
@@ -242,7 +242,7 @@ fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
     let (begin_label, jbegin_label) = state_holder.get_label("beginWhile".to_string());
     let (end_label, jend_label) = state_holder.get_label("endWhile".to_string());
     println!("{}", begin_label);
-    code_gen_exp(cond, state_holder);
+    code_gen_exp(&cond, state_holder);
     println!("  cmp rax, 0");
     println!("  je {}", jend_label);
     code_gen(vec![stmt], state_holder);
@@ -251,7 +251,7 @@ fn code_gen_while(cond: Exp, stmt: Stmt, state_holder: &mut StateHolder) {
 }
 
 fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut StateHolder) {
-    code_gen_exp(cond, state_holder);
+    code_gen_exp(&cond, state_holder);
     match stmt2 {
         Some(stmt2) => {
             let (else_label, jelse_label) = state_holder.get_label("if".to_string());
@@ -274,7 +274,7 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
     }
 }
 
-fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
+fn code_gen_assign(left: &Exp, right: &Exp, state_holder: &mut StateHolder) {
     let left = match left {
         Exp::Var(v) => v,
         _ => panic!("error"),
@@ -288,15 +288,15 @@ fn code_gen_assign(left: Exp, right: Exp, state_holder: &mut StateHolder) {
     pop("rdi".to_string(), state_holder);
     println!("  mov [rdi], rax");
 }
-pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
+pub fn code_gen_exp(exp: &Exp, state_holder: &mut StateHolder) {
     match exp {
         FuncCall { fun, args } => {
-            code_gen_func_call(*fun, args, state_holder);
+            code_gen_func_call(fun, args, state_holder);
         }
         InfixExp { left, op, right } => {
             match op {
                 Assign => {
-                    code_gen_assign(*left.clone(), *right.clone(), state_holder);
+                    code_gen_assign(&left, &right, state_holder);
                     return;
                 }
                 _ => {}
@@ -304,9 +304,9 @@ pub fn code_gen_exp(exp: Exp, state_holder: &mut StateHolder) {
             // ちょっと無駄が多いコードになったが、
             // こうした方が左辺→右辺という計算順序が遵守されるから
             // いいかな、という判断。
-            code_gen_exp(*left.clone(), state_holder);
+            code_gen_exp(&left, state_holder);
             push("rax".to_string(), state_holder);
-            code_gen_exp(*right.clone(), state_holder);
+            code_gen_exp(&right, state_holder);
             push("rax".to_string(), state_holder);
             pop("rdi".to_string(), state_holder);
             pop("rax".to_string(), state_holder);
@@ -413,13 +413,13 @@ impl StateHolder {
         self.label_counter += 1;
         value
     }
-    fn get_offset(&mut self, str: String) -> i32 {
-        if let Some(offset) = self.offset_map.get(&str) {
+    fn get_offset(&mut self, str: &String) -> i32 {
+        if let Some(offset) = self.offset_map.get(str) {
             return -1 * *offset;
         }
         let offset = self.max_offset;
         self.max_offset += LOCAL_VAR_OFFSET;
-        self.offset_map.insert(str, offset);
+        self.offset_map.insert(str.clone(), offset);
         let offset = -1 * offset;
         offset
     }
@@ -432,26 +432,26 @@ impl StateHolder {
 #[test]
 fn test_map() {
     let mut state_holder = new_state_holder();
-    let offset = state_holder.get_offset("a".to_string());
+    let offset = state_holder.get_offset(&"a".to_string());
     assert_eq!(offset, -LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset("a".to_string());
+    let offset = state_holder.get_offset(&"a".to_string());
     assert_eq!(offset, -LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset("b".to_string());
+    let offset = state_holder.get_offset(&"b".to_string());
     assert_eq!(offset, -2 * LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset("c".to_string());
+    let offset = state_holder.get_offset(&"c".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -3);
-    let offset = state_holder.get_offset("d".to_string());
+    let offset = state_holder.get_offset(&"d".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -4);
-    let offset = state_holder.get_offset("d".to_string());
+    let offset = state_holder.get_offset(&"d".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -4);
     state_holder.reset_offset();
-    let offset = state_holder.get_offset("d".to_string());
+    let offset = state_holder.get_offset(&"d".to_string());
     assert_eq!(offset, -LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset("d".to_string());
+    let offset = state_holder.get_offset(&"d".to_string());
     assert_eq!(offset, -LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset("a".to_string());
+    let offset = state_holder.get_offset(&"a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -2);
-    let offset = state_holder.get_offset("a".to_string());
+    let offset = state_holder.get_offset(&"a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -2);
 
     let (label, jlabel) = state_holder.get_label("if".to_string());
