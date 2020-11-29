@@ -13,6 +13,10 @@ pub enum Op {
     Gr,
     GrEq,
     Assign,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum UOp {
     Address,
     Deref,
 }
@@ -21,7 +25,7 @@ pub enum Exp {
     Int(i32),
     Var(String),
     UnaryExp {
-        op: Op,
+        op: UOp,
         exp: Box<Exp>,
     },
     InfixExp {
@@ -90,7 +94,6 @@ fn token_mapper(token: Token) -> Op {
         Token::Gr => Op::Gr,
         Token::LsEq => Op::LsEq,
         Token::GrEq => Op::GrEq,
-        Token::Address => Op::Address,
         _ => panic!("token_mapper error"),
     }
 }
@@ -381,7 +384,7 @@ fn parse_mul<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     }
 }
 
-fn unary_exp(op: Op, exp: Exp) -> Exp {
+fn unary_exp(op: UOp, exp: Exp) -> Exp {
     Exp::UnaryExp {
         op: op,
         exp: Box::new(exp),
@@ -397,11 +400,11 @@ fn parse_unary<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
         }
         [Token::Asterisk, rest @ ..] => {
             let (e, rest) = parse_unary(rest)?;
-            Ok((unary_exp(Op::Deref, e), rest))
+            Ok((unary_exp(UOp::Deref, e), rest))
         }
         [Token::Address, rest @ ..] => {
             let (e, rest) = parse_unary(rest)?;
-            Ok((unary_exp(Op::Address, e), rest))
+            Ok((unary_exp(UOp::Address, e), rest))
         }
         _ => parse_primary(tokens),
     }

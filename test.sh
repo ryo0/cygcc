@@ -124,4 +124,12 @@ assert 55 'int main() { return fib(9); } int fib(x) { if (x<=1) return 1; return
 assert 3 'int main() { a = 3; return fib(a); } int fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
 
 assert 8 'int main() { return add2_plus1(3,4); } int add2_plus1(x, y) { p = 1; return x+y +p; }'
+
+assert 5 'int main() { x=3; y=5; return *(&x-8); }'
+assert 3 'int main() { x=3; y=5; return *(&y+8); }'
+assert 5 'int main() { x=3; y=5; return *(&x+-8); }'
+
+assert 7 'int main() { x=3; y=5; *(&x-8)=7; return y; }'
+assert 7 'int main() { x=3; y=5; *(&y+8)=7; return x; }'
+assert 5 'int main() { x=3; return (&x+2)-&x+3; }'
 echo OK

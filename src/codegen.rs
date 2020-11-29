@@ -3,6 +3,7 @@ use crate::parser::Exp::*;
 use crate::parser::Op::*;
 use crate::parser::Program;
 use crate::parser::Stmt;
+use crate::parser::UOp::*;
 use std::collections::HashMap;
 
 static ARG_REG: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
@@ -277,10 +278,14 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
 
 fn gen_addr(exp: &Exp, state_holder: &mut StateHolder) {
     let v = match exp {
-        Exp::Var(v) => v,
+        Exp::Var(v) => {
+            println!("  lea rax, [{} + rbp]", state_holder.get_offset(v));
+        }
+        Exp::UnaryExp { op: Deref, exp } => {
+            code_gen_exp(exp, state_holder);
+        }
         _ => panic!("error"),
     };
-    println!("  lea rax, [{} + rbp]", state_holder.get_offset(v));
 }
 
 fn code_gen_assign(left: &Exp, right: &Exp, state_holder: &mut StateHolder) {
@@ -317,16 +322,17 @@ pub fn code_gen_exp(exp: &Exp, state_holder: &mut StateHolder) {
             pop("rax".to_string(), state_holder);
             match op {
                 Plus => {
-                    println!("  addsd rax, rdi");
+                    println!("  add rax, rdi");
                 }
                 Minus => {
-                    println!("  subsd rax, rdi");
+                    println!("  sub rax, rdi");
                 }
                 Asterisk => {
-                    println!("  mulsd rax, rdi");
+                    println!("  imul rax, rdi");
                 }
                 Slash => {
-                    println!("  divsd rax, rdi");
+                    println!("  cqo");
+                    println!("  idiv rdi");
                 }
                 Eq => {
                     println!("  cmp rax, rdi");
@@ -370,7 +376,13 @@ pub fn code_gen_exp(exp: &Exp, state_holder: &mut StateHolder) {
             gen_addr(exp, state_holder);
             println!("  mov rax, [rax]");
         }
-        UnaryExp { op, exp } => {}
+        UnaryExp { op, exp } => match op {
+            Address => gen_addr(exp, state_holder),
+            Deref => {
+                code_gen_exp(exp, state_holder);
+                println!("  mov rax, [rax]");
+            }
+        },
     }
 }
 
