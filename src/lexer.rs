@@ -25,6 +25,7 @@ pub enum Token {
     RBrace,
     TypeDec(Type),
     Comma,
+    Address,
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Type {
@@ -139,6 +140,7 @@ fn symbol_to_token_mapper(c: char) -> Result<Token, String> {
         '{' => Ok(Token::LBrace),
         '}' => Ok(Token::RBrace),
         ',' => Ok(Token::Comma),
+        '&' => Ok(Token::Address),
         _ => Err(format!("symbol_to_token_mapper error: {}", c)),
     }
 }

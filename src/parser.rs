@@ -13,11 +13,16 @@ pub enum Op {
     Gr,
     GrEq,
     Assign,
+    Address,
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Exp {
     Int(i32),
     Var(String),
+    UnaryExp {
+        op: Op,
+        exp: Box<Exp>,
+    },
     InfixExp {
         left: Box<Exp>,
         op: Op,
@@ -84,6 +89,7 @@ fn token_mapper(token: Token) -> Op {
         Token::Gr => Op::Gr,
         Token::LsEq => Op::LsEq,
         Token::GrEq => Op::GrEq,
+        Token::Address => Op::Address,
         _ => panic!("token_mapper error"),
     }
 }
@@ -374,12 +380,27 @@ fn parse_mul<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     }
 }
 
+fn unary_exp(op: Op, exp: Exp) -> Exp {
+    Exp::UnaryExp {
+        op: op,
+        exp: Box::new(exp),
+    }
+}
+
 fn parse_unary<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
     match tokens {
         [Token::Plus, rest @ ..] => parse_unary(rest),
         [Token::Minus, rest @ ..] => {
             let (p, rest) = parse_unary(rest)?;
             Ok((infix_exp(Exp::Int(0), Op::Minus, p), rest))
+        }
+        [Token::Asterisk, rest @ ..] => {
+            let (e, rest) = parse_unary(rest)?;
+            Ok((unary_exp(Op::Asterisk, e), rest))
+        }
+        [Token::Address, rest @ ..] => {
+            let (e, rest) = parse_unary(rest)?;
+            Ok((unary_exp(Op::Address, e), rest))
         }
         _ => parse_primary(tokens),
     }
@@ -472,4 +493,6 @@ fn parse_exp_test() {
     parse_test("int sum (x, y) {for(;;) {i = i + 1;} }");
     parse_test("sum(1+2, 2+3);");
     parse_test("sum(1+2, 2+3) + sum(0, 1);");
+
+    parse_test("1 + **a; &*a * 2;");
 }

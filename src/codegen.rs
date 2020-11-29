@@ -317,17 +317,16 @@ pub fn code_gen_exp(exp: &Exp, state_holder: &mut StateHolder) {
             pop("rax".to_string(), state_holder);
             match op {
                 Plus => {
-                    println!("  add rax, rdi");
+                    println!("  addsd rax, rdi");
                 }
                 Minus => {
-                    println!("  sub rax, rdi");
+                    println!("  subsd rax, rdi");
                 }
                 Asterisk => {
-                    println!("  imul rax, rdi");
+                    println!("  mulsd rax, rdi");
                 }
                 Slash => {
-                    println!("  cqo");
-                    println!("  idiv rdi");
+                    println!("  divsd rax, rdi");
                 }
                 Eq => {
                     println!("  cmp rax, rdi");
@@ -371,6 +370,7 @@ pub fn code_gen_exp(exp: &Exp, state_holder: &mut StateHolder) {
             gen_addr(exp, state_holder);
             println!("  mov rax, [rax]");
         }
+        UnaryExp { op, exp } => {}
     }
 }
 
