@@ -171,7 +171,8 @@ fn get_locals_exp(exp: &Exp) -> i32 {
 }
 
 fn get_stack_size(params: &Vec<Exp>, body: &Vec<Stmt>) -> i32 {
-    let stack_size = (params.len() as i32 + get_locals_stmts(&body)) * LOCAL_VAR_OFFSET;
+    let var_num = params.len() as i32 + get_locals_stmts(&body);
+    let stack_size = var_num * LOCAL_VAR_OFFSET;
     align_to(stack_size, RSP_CONST)
 }
 
