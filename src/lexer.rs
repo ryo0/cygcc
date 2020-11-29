@@ -31,8 +31,6 @@ pub enum Type {
     Int,
 }
 
-const RESERVED_WORDS: [&'static str; 6] = ["return", "if", "else", "while", "for", "int"];
-
 fn reserved_words_map(str: &str) -> Token {
     match str {
         "return" => Token::Return,
@@ -41,7 +39,7 @@ fn reserved_words_map(str: &str) -> Token {
         "while" => Token::While,
         "for" => Token::For,
         "int" => Token::TypeDec(Type::Int),
-        _ => panic!(format!("reserved_words_map: {}", str)),
+        _ => Token::Var(str.to_string()),
     }
 }
 
@@ -74,11 +72,7 @@ fn tokenize_main<'a>(s: &'a [char], acm: &mut Vec<Token>) -> LexerResult {
             let get_var_result = get_var(s, String::new());
             match get_var_result {
                 Ok((Token::Var(v), rest)) => {
-                    if RESERVED_WORDS.contains(&v.as_str()) {
-                        acm.push(reserved_words_map(&v));
-                    } else {
-                        acm.push(Token::Var(v));
-                    }
+                    acm.push(reserved_words_map(&v));
                     tokenize_main(rest, acm)
                 }
                 Err(err) => Err(err),
