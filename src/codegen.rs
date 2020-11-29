@@ -275,12 +275,16 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
     }
 }
 
-fn code_gen_assign(left: &Exp, right: &Exp, state_holder: &mut StateHolder) {
-    let left = match left {
+fn gen_addr(exp: &Exp, state_holder: &mut StateHolder) {
+    let v = match exp {
         Exp::Var(v) => v,
         _ => panic!("error"),
     };
-    println!("  lea rax, [{} + rbp]", state_holder.get_offset(left));
+    println!("  lea rax, [{} + rbp]", state_holder.get_offset(v));
+}
+
+fn code_gen_assign(left: &Exp, right: &Exp, state_holder: &mut StateHolder) {
+    gen_addr(left, state_holder);
 
     push("rax".to_string(), state_holder);
 
@@ -363,8 +367,8 @@ pub fn code_gen_exp(exp: &Exp, state_holder: &mut StateHolder) {
         Int(i) => {
             println!("  mov rax, {}", i);
         }
-        Var(v) => {
-            println!("  lea rax, [{} + rbp]", state_holder.get_offset(v));
+        Var(_) => {
+            gen_addr(exp, state_holder);
             println!("  mov rax, [rax]");
         }
     }
