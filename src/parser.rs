@@ -14,6 +14,7 @@ pub enum Op {
     GrEq,
     Assign,
     Address,
+    Deref,
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Exp {
@@ -396,7 +397,7 @@ fn parse_unary<'a>(tokens: &'a [Token]) -> ParseExpResult<'a> {
         }
         [Token::Asterisk, rest @ ..] => {
             let (e, rest) = parse_unary(rest)?;
-            Ok((unary_exp(Op::Asterisk, e), rest))
+            Ok((unary_exp(Op::Deref, e), rest))
         }
         [Token::Address, rest @ ..] => {
             let (e, rest) = parse_unary(rest)?;
