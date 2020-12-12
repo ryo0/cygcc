@@ -1,4 +1,4 @@
-use crate::lexer::{tokenize, Token, Type};
+use crate::lexer::{tokenize, Token, TypeDec};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Op {
@@ -59,18 +59,18 @@ pub enum Stmt {
         stmt: Box<Stmt>,
     },
     Func {
-        t: Type,
+        t: TypeDec,
         fun: Box<Exp>,
         params: Vec<TypeAndExp>,
         body: Vec<Stmt>,
     },
     VarDec {
-        t: Type,
+        t: TypeDec,
         var: Box<Exp>,
     },
 }
 
-pub type TypeAndExp = (Type, Exp);
+pub type TypeAndExp = (TypeDec, Exp);
 
 pub type Program = Vec<Stmt>;
 
@@ -192,7 +192,7 @@ fn parse_vars<'a>(
     }
 }
 
-fn parse_type(tokens: &[Token]) -> Result<(Type, &[Token]), String> {
+fn parse_type(tokens: &[Token]) -> Result<(TypeDec, &[Token]), String> {
     match tokens {
         [Token::Type(t), rest @ ..] => Ok((t.clone(), rest)),
         _ => Err(format!("type宣言がおかしい {:?}", tokens)),
@@ -220,7 +220,7 @@ fn parse_type_vars<'a>(
     }
 }
 
-fn parse_func(t: Type, fun: String, tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
+fn parse_func(t: TypeDec, fun: String, tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
     let (params, rest) = parse_type_vars(tokens, &mut vec![])?;
     let (body, rest) = parse_block(rest, &mut vec![])?;
     Ok((

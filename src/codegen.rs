@@ -1,4 +1,4 @@
-use crate::lexer::Type;
+use crate::lexer::TypeDec;
 use crate::parser::Exp;
 use crate::parser::Exp::*;
 use crate::parser::Op::*;
@@ -158,7 +158,7 @@ fn get_locals_stmt(stmt: &Stmt) -> i32 {
             body,
         } => params.len() as i32 + get_locals_stmts(&body),
         Stmt::VarDec { t, var } => match t {
-            Type::Int => 1,
+            TypeDec::Int => 1,
         },
         _ => 0,
     }
