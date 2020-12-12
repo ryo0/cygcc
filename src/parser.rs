@@ -1,5 +1,10 @@
-use crate::lexer::{tokenize, Token, TypeDec};
+use crate::lexer::{tokenize, Token, Type};
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum TypeDec {
+    Int,
+    Pointer(Box<TypeDec>),
+}
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Op {
     Plus,
@@ -15,6 +20,16 @@ pub enum Op {
     Assign,
 }
 
+fn map_type(t: Type) -> TypeDec {
+    match t {
+        Type::Int => TypeDec::Int,
+        _ => panic!("未対応 map_type"),
+    }
+}
+
+fn boxing<T>(t: T) -> Box<T> {
+    Box::new(t)
+}
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum UOp {
     Address,
@@ -149,15 +164,25 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
         [Token::While, Token::LParen, rest @ ..] => parse_while(rest),
         [Token::For, Token::LParen, rest @ ..] => parse_for(rest),
         [Token::Type(t), Token::Var(fun), Token::LParen, rest @ ..] => {
-            parse_func(t.clone(), fun.clone(), rest)
+            parse_func(map_type(t.clone()), fun.clone(), rest)
         }
-        [Token::Type(t), Token::Var(v), Token::Semicolon, rest @ ..] => Ok((
-            Stmt::VarDec {
-                t: t.clone(),
-                var: box_exp(Exp::Var(v.clone())),
-            },
-            rest,
-        )),
+        [Token::Type(t), rest @ ..] => {
+            let (t, rest) = parse_type(rest, map_type(t.clone()));
+            let (var, rest) = parse_stmt(rest)?;
+            let var = match var {
+                Stmt::Exp(exp) => exp,
+                _ => {
+                    panic!("error");
+                }
+            };
+            Ok((
+                Stmt::VarDec {
+                    t,
+                    var: box_exp(var),
+                },
+                rest,
+            ))
+        }
         _ => {
             let result = parse_exp(tokens);
             match result {
@@ -192,10 +217,10 @@ fn parse_vars<'a>(
     }
 }
 
-fn parse_type(tokens: &[Token]) -> Result<(TypeDec, &[Token]), String> {
+fn parse_type(tokens: &[Token], t: TypeDec) -> (TypeDec, &[Token]) {
     match tokens {
-        [Token::Type(t), rest @ ..] => Ok((t.clone(), rest)),
-        _ => Err(format!("type宣言がおかしい {:?}", tokens)),
+        [Token::Asterisk, rest @ ..] => parse_type(rest, TypeDec::Pointer(boxing(t))),
+        _ => (t, tokens),
     }
 }
 
@@ -210,8 +235,8 @@ fn parse_type_vars<'a>(
     match tokens {
         [Token::Comma, rest @ ..] => parse_type_vars(rest, acm),
         [Token::RParen, rest @ ..] => Ok((acm.clone(), rest)),
-        [_, _rest @ ..] => {
-            let (t, rest) = parse_type(tokens)?;
+        [Token::Type(t), rest @ ..] => {
+            let (t, rest) = parse_type(rest, map_type(t.clone()));
             let (exp, rest) = parse_exp(rest)?;
             acm.push((t, exp));
             parse_type_vars(rest, acm)
@@ -480,6 +505,7 @@ fn parse_test(str: &str) {
     };
     println!("{:?}", exp);
 }
+
 #[test]
 fn parse_exp_test() {
     parse_test("1+2*3+4+5*6;");
@@ -540,4 +566,6 @@ fn parse_exp_test() {
     parse_test("sum(1+2, 2+3) + sum(0, 1);");
 
     parse_test("1 + **a; &*a * 2;");
+    parse_test("int *a; ");
+    parse_test("int ***a; ");
 }

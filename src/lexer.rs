@@ -23,12 +23,12 @@ pub enum Token {
     For,
     LBrace,
     RBrace,
-    Type(TypeDec),
+    Type(Type),
     Comma,
     Address,
 }
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum TypeDec {
+pub enum Type {
     Int,
 }
 
@@ -39,7 +39,7 @@ fn reserved_words_map(str: &str) -> Token {
         "else" => Token::Else,
         "while" => Token::While,
         "for" => Token::For,
-        "int" => Token::Type(TypeDec::Int),
+        "int" => Token::Type(Type::Int),
         _ => Token::Var(str.to_string()),
     }
 }

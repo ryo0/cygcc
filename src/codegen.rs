@@ -1,16 +1,17 @@
-use crate::lexer::TypeDec;
 use crate::parser::Exp;
 use crate::parser::Exp::*;
 use crate::parser::Op::*;
 use crate::parser::Program;
 use crate::parser::Stmt;
 use crate::parser::TypeAndExp;
+use crate::parser::TypeDec;
 use crate::parser::UOp::*;
 use std::collections::HashMap;
 
 static ARG_REG: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 
 const LOCAL_VAR_OFFSET: i32 = 8;
+const LOCAL_POINTER_OFFSET: i32 = 4;
 const RSP_CONST: i32 = 16;
 
 fn push(val: String, state_holder: &mut StateHolder) {
@@ -159,6 +160,7 @@ fn get_locals_stmt(stmt: &Stmt) -> i32 {
         } => params.len() as i32 + get_locals_stmts(&body),
         Stmt::VarDec { t, var } => match t {
             TypeDec::Int => 1,
+            _ => panic!("未対応 get_locals_stmt"),
         },
         _ => 0,
     }
@@ -190,7 +192,7 @@ fn code_gen_func(f: Exp, params: Vec<TypeAndExp>, body: Vec<Stmt>, state_holder:
     let mut i = 0;
     for v in params {
         let v = match v {
-            (_, Exp::Var(v)) => {
+            (t, Exp::Var(v)) => {
                 state_holder.set_local_var_env(v.clone());
                 v
             }
@@ -198,7 +200,7 @@ fn code_gen_func(f: Exp, params: Vec<TypeAndExp>, body: Vec<Stmt>, state_holder:
         };
         println!(
             "  mov [{} + rbp], {}",
-            state_holder.get_offset(&v),
+            state_holder.get_local_var_offset(&v),
             ARG_REG[i]
         );
         i += 1;
@@ -279,7 +281,10 @@ fn gen_addr(exp: &Exp, state_holder: &mut StateHolder) {
             if !state_holder.check_local_var_from_env(v.clone()) {
                 panic!(format!("未定義変数 {}", v))
             }
-            println!("  lea rax, [{} + rbp]", state_holder.get_offset(v));
+            println!(
+                "  lea rax, [{} + rbp]",
+                state_holder.get_local_var_offset(v)
+            );
         }
         Exp::UnaryExp { op: Deref, exp } => {
             code_gen_exp(exp, state_holder);
@@ -432,7 +437,17 @@ impl StateHolder {
         self.label_counter += 1;
         value
     }
-    fn get_offset(&mut self, str: &String) -> i32 {
+    fn get_pointer_offset(&mut self, str: &String) -> i32 {
+        if let Some(offset) = self.offset_map.get(str) {
+            return -1 * *offset;
+        }
+        let offset = self.max_offset;
+        self.max_offset += LOCAL_POINTER_OFFSET;
+        self.offset_map.insert(str.clone(), offset);
+        let offset = -1 * offset;
+        offset
+    }
+    fn get_local_var_offset(&mut self, str: &String) -> i32 {
         if let Some(offset) = self.offset_map.get(str) {
             return -1 * *offset;
         }
@@ -465,26 +480,26 @@ impl StateHolder {
 #[test]
 fn test_map() {
     let mut state_holder = new_state_holder();
-    let offset = state_holder.get_offset(&"a".to_string());
+    let offset = state_holder.get_local_var_offset(&"a".to_string());
     assert_eq!(offset, -LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset(&"a".to_string());
+    let offset = state_holder.get_local_var_offset(&"a".to_string());
     assert_eq!(offset, -LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset(&"b".to_string());
+    let offset = state_holder.get_local_var_offset(&"b".to_string());
     assert_eq!(offset, -2 * LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset(&"c".to_string());
+    let offset = state_holder.get_local_var_offset(&"c".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -3);
-    let offset = state_holder.get_offset(&"d".to_string());
+    let offset = state_holder.get_local_var_offset(&"d".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -4);
-    let offset = state_holder.get_offset(&"d".to_string());
+    let offset = state_holder.get_local_var_offset(&"d".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -4);
     state_holder.reset_offset();
-    let offset = state_holder.get_offset(&"d".to_string());
+    let offset = state_holder.get_local_var_offset(&"d".to_string());
     assert_eq!(offset, -LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset(&"d".to_string());
+    let offset = state_holder.get_local_var_offset(&"d".to_string());
     assert_eq!(offset, -LOCAL_VAR_OFFSET);
-    let offset = state_holder.get_offset(&"a".to_string());
+    let offset = state_holder.get_local_var_offset(&"a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -2);
-    let offset = state_holder.get_offset(&"a".to_string());
+    let offset = state_holder.get_local_var_offset(&"a".to_string());
     assert_eq!(offset, LOCAL_VAR_OFFSET * -2);
 
     let (label, jlabel) = state_holder.get_label("if".to_string());
