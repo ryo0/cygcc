@@ -48,6 +48,12 @@ fn unbox<T>(value: Box<T>) -> T {
 }
 
 fn infix_pointer_exp_converter(exp: Exp, state_holder: &mut StateHolder) -> Exp {
+    fn pointer_type_size(t: TypeDec) -> i32 {
+        match t {
+            TypeDec::Pointer(t) => 8,
+            TypeDec::Int => 4,
+        }
+    }
     match exp.clone() {
         InfixExp { left, op, right } => match op {
             Plus | Minus => match (*left.clone(), *right.clone()) {
@@ -60,7 +66,7 @@ fn infix_pointer_exp_converter(exp: Exp, state_holder: &mut StateHolder) -> Exp 
                             right: Box::new(InfixExp {
                                 left: Box::new(right),
                                 op: Asterisk,
-                                right: Box::new(Exp::Int(8)),
+                                right: Box::new(Exp::Int(pointer_type_size(*p))),
                             }),
                         },
                         _ => exp,
@@ -73,7 +79,7 @@ fn infix_pointer_exp_converter(exp: Exp, state_holder: &mut StateHolder) -> Exp 
                             left: Box::new(InfixExp {
                                 left: Box::new(left),
                                 op: Asterisk,
-                                right: Box::new(Exp::Int(8)),
+                                right: Box::new(Exp::Int(pointer_type_size(*p))),
                             }),
                             op: op,
                             right: right,
@@ -360,6 +366,7 @@ fn code_gen_assign(left: &Exp, right: &Exp, state_holder: &mut StateHolder) {
     println!("  mov [rdi], rax");
 }
 pub fn code_gen_exp(exp: &Exp, state_holder: &mut StateHolder) {
+    let exp = &infix_pointer_exp_converter(exp.clone(), state_holder);
     match exp {
         FuncCall { fun, args } => {
             code_gen_func_call(fun, args, state_holder);
