@@ -47,6 +47,48 @@ fn unbox<T>(value: Box<T>) -> T {
     *value
 }
 
+fn infix_pointer_exp_converter(exp: Exp, state_holder: &mut StateHolder) -> Exp {
+    match exp.clone() {
+        InfixExp { left, op, right } => match op {
+            Plus | Minus => match (*left.clone(), *right.clone()) {
+                (Exp::Var(v), right) => {
+                    let left_type = state_holder.get_local_var_type(v);
+                    match left_type {
+                        TypeDec::Pointer(p) => InfixExp {
+                            left,
+                            op,
+                            right: Box::new(InfixExp {
+                                left: Box::new(right),
+                                op: Asterisk,
+                                right: Box::new(Exp::Int(8)),
+                            }),
+                        },
+                        _ => exp,
+                    }
+                }
+                (left, Exp::Var(v)) => {
+                    let right_type = state_holder.get_local_var_type(v);
+                    match right_type {
+                        TypeDec::Pointer(p) => InfixExp {
+                            left: Box::new(InfixExp {
+                                left: Box::new(left),
+                                op: Asterisk,
+                                right: Box::new(Exp::Int(8)),
+                            }),
+                            op: op,
+                            right: right,
+                        },
+                        _ => exp,
+                    }
+                }
+                _ => exp,
+            },
+            _ => exp,
+        },
+        _ => exp,
+    }
+}
+
 pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
     for stmt in p {
         match stmt {
@@ -83,12 +125,12 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
             Stmt::VarDec { t, var } => {
                 let var = match unbox(var) {
                     Exp::Var(var) => {
-                        state_holder.set_local_var_env(var.clone());
+                        state_holder.set_local_var_env(t.clone(), var.clone());
                         var
                     }
                     _ => panic!("error"),
                 };
-                state_holder.set_local_var_env(var);
+                state_holder.set_local_var_env(t, var);
             }
             _ => {
                 panic!("未対応");
@@ -207,7 +249,7 @@ fn code_gen_func(f: Exp, params: Vec<TypeAndExp>, body: Vec<Stmt>, state_holder:
     for v in params {
         let v = match v {
             (t, Exp::Var(v)) => {
-                state_holder.set_local_var_env(v.clone());
+                state_holder.set_local_var_env(t, v.clone());
                 v
             }
             _ => panic!(format!("error in code_gen_func paramsがVarでない")),
@@ -405,13 +447,18 @@ pub fn code_gen_exp(exp: &Exp, state_holder: &mut StateHolder) {
     }
 }
 
+struct Varinfo {
+    name: String,
+    t: TypeDec,
+}
+
 pub struct StateHolder {
     offset_map: HashMap<String, i32>,
     max_offset: i32,
     label_counter: i32,
     current_fun_name: String,
     depth: i32,
-    local_vars_env: Vec<String>,
+    local_vars_env: Vec<Varinfo>,
 }
 
 fn new_state_holder() -> StateHolder {
@@ -475,15 +522,23 @@ impl StateHolder {
         self.offset_map = HashMap::new();
         self.max_offset = LOCAL_VAR_OFFSET;
     }
-    fn set_local_var_env(&mut self, var: String) {
-        self.local_vars_env.push(var);
+    fn set_local_var_env(&mut self, t: TypeDec, var: String) {
+        self.local_vars_env.push(Varinfo { name: var, t: t });
+    }
+    fn get_local_var_type(&mut self, var: String) -> TypeDec {
+        for v in &self.local_vars_env {
+            if v.name == var {
+                return v.t.clone();
+            }
+        }
+        panic!("envにvarがない")
     }
     fn reset_local_var_env(&mut self) {
         self.local_vars_env = vec![];
     }
     fn check_local_var_from_env(&mut self, var: String) -> bool {
-        for v in self.local_vars_env.clone() {
-            if v == var {
+        for v in &self.local_vars_env {
+            if v.name == var {
                 return true;
             }
         }
