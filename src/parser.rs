@@ -151,6 +151,13 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
         [Token::Type(t), Token::Var(fun), Token::LParen, rest @ ..] => {
             parse_func(t.clone(), fun.clone(), rest)
         }
+        [Token::Type(t), Token::Var(v), Token::Semicolon, rest @ ..] => Ok((
+            Stmt::VarDec {
+                t: t.clone(),
+                var: box_exp(Exp::Var(v.clone())),
+            },
+            rest,
+        )),
         _ => {
             let result = parse_exp(tokens);
             match result {

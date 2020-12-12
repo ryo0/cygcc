@@ -41,6 +41,10 @@ fn start_to_code_gen(p: Program) {
     code_gen(p, &mut state_holder);
 }
 
+fn unbox<T>(value: Box<T>) -> T {
+    *value
+}
+
 pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
     for stmt in p {
         match stmt {
@@ -73,6 +77,16 @@ pub fn code_gen(p: Program, state_holder: &mut StateHolder) {
                 body,
             } => {
                 code_gen_func(*fun, params, body, state_holder);
+            }
+            Stmt::VarDec { t, var } => {
+                let var = match unbox(var) {
+                    Exp::Var(var) => {
+                        state_holder.set_local_var_env(var.clone());
+                        var
+                    }
+                    _ => panic!("error"),
+                };
+                state_holder.set_local_var_env(var);
             }
             _ => {
                 panic!("未対応");
@@ -119,55 +133,30 @@ fn get_locals_stmts(body: &Vec<Stmt>) -> i32 {
     c
 }
 
-fn get_locals_option_exp(exp: &Box<Option<Exp>>) -> i32 {
-    match **exp {
-        None => 0,
-        Some(ref exp) => get_locals_exp(exp),
-    }
-}
-
 fn get_locals_stmt(stmt: &Stmt) -> i32 {
     match stmt {
-        Stmt::Exp(ref exp) => get_locals_exp(exp),
-        Stmt::Return(ref exp) => get_locals_exp(exp),
         Stmt::Block(ref stmts) => get_locals_stmts(stmts),
         Stmt::If { cond, stmt1, stmt2 } => {
             let c2 = match **stmt2 {
                 Some(ref stmt) => get_locals_stmt(stmt),
                 None => 0,
             };
-            get_locals_exp(&cond) + get_locals_stmt(&stmt1) + c2
+            get_locals_stmt(&stmt1) + c2
         }
-        Stmt::While { cond, stmt } => get_locals_exp(&cond) + get_locals_stmt(&stmt),
+        Stmt::While { cond, stmt } => get_locals_stmt(&stmt),
         Stmt::For {
             exp1,
             exp2,
             exp3,
             stmt,
-        } => {
-            get_locals_option_exp(exp1)
-                + get_locals_option_exp(exp2)
-                + get_locals_option_exp(exp3)
-                + get_locals_stmt(&stmt)
-        }
+        } => get_locals_stmt(&stmt),
         Stmt::Func {
             t,
             fun,
             params,
             body,
         } => get_locals_stmts(&body),
-        _ => {
-            panic!("未対応");
-        }
-    }
-}
-
-fn get_locals_exp(exp: &Exp) -> i32 {
-    match exp {
-        Exp::InfixExp { left, op, right } => match op {
-            Assign => get_locals_exp(left) + 1 + get_locals_exp(right),
-            _ => get_locals_exp(left) + get_locals_exp(right),
-        },
+        Stmt::VarDec { t, var } => 1,
         _ => 0,
     }
 }
@@ -179,6 +168,7 @@ fn get_stack_size<T>(params: &Vec<T>, body: &Vec<Stmt>) -> i32 {
 }
 
 fn code_gen_func(f: Exp, params: Vec<TypeAndExp>, body: Vec<Stmt>, state_holder: &mut StateHolder) {
+    state_holder.reset_local_var_env();
     let name = match f {
         Exp::Var(v) => v,
         _ => panic!(format!("error, func nameがVarでない: {:?}", f)),
@@ -280,6 +270,9 @@ fn code_gen_if(cond: Exp, stmt1: Stmt, stmt2: Option<Stmt>, state_holder: &mut S
 fn gen_addr(exp: &Exp, state_holder: &mut StateHolder) {
     let v = match exp {
         Exp::Var(v) => {
+            if !state_holder.check_local_var_from_env(v.clone()) {
+                panic!(format!("未定義変数 {}", v))
+            }
             println!("  lea rax, [{} + rbp]", state_holder.get_offset(v));
         }
         Exp::UnaryExp { op: Deref, exp } => {
@@ -393,6 +386,7 @@ pub struct StateHolder {
     label_counter: i32,
     current_fun_name: String,
     depth: i32,
+    local_vars_env: Vec<String>,
 }
 
 fn new_state_holder() -> StateHolder {
@@ -402,6 +396,7 @@ fn new_state_holder() -> StateHolder {
         label_counter: 0,
         current_fun_name: "".to_string(),
         depth: 0,
+        local_vars_env: vec![],
     };
 }
 
@@ -444,6 +439,20 @@ impl StateHolder {
     fn reset_offset(&mut self) {
         self.offset_map = HashMap::new();
         self.max_offset = LOCAL_VAR_OFFSET;
+    }
+    fn set_local_var_env(&mut self, var: String) {
+        self.local_vars_env.push(var);
+    }
+    fn reset_local_var_env(&mut self) {
+        self.local_vars_env = vec![];
+    }
+    fn check_local_var_from_env(&mut self, var: String) -> bool {
+        for v in self.local_vars_env.clone() {
+            if v == var {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
