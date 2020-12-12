@@ -61,10 +61,16 @@ pub enum Stmt {
     Func {
         t: Type,
         fun: Box<Exp>,
-        params: Vec<Exp>,
+        params: Vec<TypeAndExp>,
         body: Vec<Stmt>,
     },
+    VarDec {
+        t: Type,
+        var: Box<Exp>,
+    },
 }
+
+pub type TypeAndExp = (Type, Exp);
 
 pub type Program = Vec<Stmt>;
 
@@ -142,7 +148,7 @@ pub fn parse_stmt(tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
         [Token::If, Token::LParen, rest @ ..] => parse_if(rest),
         [Token::While, Token::LParen, rest @ ..] => parse_while(rest),
         [Token::For, Token::LParen, rest @ ..] => parse_for(rest),
-        [Token::TypeDec(t), Token::Var(fun), Token::LParen, rest @ ..] => {
+        [Token::Type(t), Token::Var(fun), Token::LParen, rest @ ..] => {
             parse_func(t.clone(), fun.clone(), rest)
         }
         _ => {
@@ -179,8 +185,36 @@ fn parse_vars<'a>(
     }
 }
 
+fn parse_type(tokens: &[Token]) -> Result<(Type, &[Token]), String> {
+    match tokens {
+        [Token::Type(t), rest @ ..] => Ok((t.clone(), rest)),
+        _ => Err(format!("type宣言がおかしい {:?}", tokens)),
+    }
+}
+
+fn parse_type_vars<'a>(
+    tokens: &'a [Token],
+    acm: &mut Vec<TypeAndExp>,
+) -> Result<(Vec<TypeAndExp>, &'a [Token]), String> {
+    let tokens = match tokens {
+        [Token::LParen, rest @ ..] => rest,
+        _ => tokens,
+    };
+    match tokens {
+        [Token::Comma, rest @ ..] => parse_type_vars(rest, acm),
+        [Token::RParen, rest @ ..] => Ok((acm.clone(), rest)),
+        [_, _rest @ ..] => {
+            let (t, rest) = parse_type(tokens)?;
+            let (exp, rest) = parse_exp(rest)?;
+            acm.push((t, exp));
+            parse_type_vars(rest, acm)
+        }
+        _ => Err(format!("varsの形式がおかしい: {:?}", tokens)),
+    }
+}
+
 fn parse_func(t: Type, fun: String, tokens: &[Token]) -> Result<(Stmt, &[Token]), String> {
-    let (params, rest) = parse_vars(tokens, &mut vec![])?;
+    let (params, rest) = parse_type_vars(tokens, &mut vec![])?;
     let (body, rest) = parse_block(rest, &mut vec![])?;
     Ok((
         Stmt::Func {
@@ -493,8 +527,8 @@ fn parse_exp_test() {
     );
     parse_test("if (true) {x = 2; false;} else {j = 0; true;}");
 
-    parse_test("int sum (x, y) {return x + y; }");
-    parse_test("int sum (x, y) {for(;;) {i = i + 1;} }");
+    parse_test("int sum (int x, int y) {return x + y; }");
+    parse_test("int sum (int x, int y) {for(;;) {i = i + 1;} }");
     parse_test("sum(1+2, 2+3);");
     parse_test("sum(1+2, 2+3) + sum(0, 1);");
 

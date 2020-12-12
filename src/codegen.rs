@@ -3,6 +3,7 @@ use crate::parser::Exp::*;
 use crate::parser::Op::*;
 use crate::parser::Program;
 use crate::parser::Stmt;
+use crate::parser::TypeAndExp;
 use crate::parser::UOp::*;
 use std::collections::HashMap;
 
@@ -171,13 +172,13 @@ fn get_locals_exp(exp: &Exp) -> i32 {
     }
 }
 
-fn get_stack_size(params: &Vec<Exp>, body: &Vec<Stmt>) -> i32 {
+fn get_stack_size<T>(params: &Vec<T>, body: &Vec<Stmt>) -> i32 {
     let var_num = params.len() as i32 + get_locals_stmts(&body);
     let stack_size = var_num * LOCAL_VAR_OFFSET;
     align_to(stack_size, RSP_CONST)
 }
 
-fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut StateHolder) {
+fn code_gen_func(f: Exp, params: Vec<TypeAndExp>, body: Vec<Stmt>, state_holder: &mut StateHolder) {
     let name = match f {
         Exp::Var(v) => v,
         _ => panic!(format!("error, func nameがVarでない: {:?}", f)),
@@ -196,7 +197,7 @@ fn code_gen_func(f: Exp, params: Vec<Exp>, body: Vec<Stmt>, state_holder: &mut S
     let mut i = 0;
     for v in params {
         let v = match v {
-            Exp::Var(v) => v,
+            (_, Exp::Var(v)) => v,
             _ => panic!(format!("error in code_gen_func paramsがVarでない")),
         };
         println!(

@@ -23,7 +23,7 @@ pub enum Token {
     For,
     LBrace,
     RBrace,
-    TypeDec(Type),
+    Type(Type),
     Comma,
     Address,
 }
@@ -39,7 +39,7 @@ fn reserved_words_map(str: &str) -> Token {
         "else" => Token::Else,
         "while" => Token::While,
         "for" => Token::For,
-        "int" => Token::TypeDec(Type::Int),
+        "int" => Token::Type(Type::Int),
         _ => Token::Var(str.to_string()),
     }
 }
