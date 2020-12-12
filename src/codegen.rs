@@ -155,7 +155,7 @@ fn get_locals_stmt(stmt: &Stmt) -> i32 {
             fun,
             params,
             body,
-        } => get_locals_stmts(&body),
+        } => params.len() as i32 + get_locals_stmts(&body),
         Stmt::VarDec { t, var } => 1,
         _ => 0,
     }
@@ -187,7 +187,10 @@ fn code_gen_func(f: Exp, params: Vec<TypeAndExp>, body: Vec<Stmt>, state_holder:
     let mut i = 0;
     for v in params {
         let v = match v {
-            (_, Exp::Var(v)) => v,
+            (_, Exp::Var(v)) => {
+                state_holder.set_local_var_env(v.clone());
+                v
+            }
             _ => panic!(format!("error in code_gen_func paramsがVarでない")),
         };
         println!(
