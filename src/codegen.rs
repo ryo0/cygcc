@@ -59,14 +59,14 @@ fn infix_pointer_exp_converter(exp: Exp, state_holder: &mut StateHolder) -> Exp 
             Plus | Minus => match (*left.clone(), *right.clone()) {
                 (Exp::Var(v), right) => {
                     let left_type = state_holder.get_local_var_type(v);
-                    match left_type {
+                    match &left_type {
                         TypeDec::Pointer(p) => InfixExp {
                             left,
                             op,
                             right: Box::new(InfixExp {
                                 left: Box::new(right),
                                 op: Asterisk,
-                                right: Box::new(Exp::Int(pointer_type_size(*p))),
+                                right: Box::new(Exp::Int(pointer_type_size(left_type))),
                             }),
                         },
                         _ => exp,
@@ -74,12 +74,12 @@ fn infix_pointer_exp_converter(exp: Exp, state_holder: &mut StateHolder) -> Exp 
                 }
                 (left, Exp::Var(v)) => {
                     let right_type = state_holder.get_local_var_type(v);
-                    match right_type {
+                    match &right_type {
                         TypeDec::Pointer(p) => InfixExp {
                             left: Box::new(InfixExp {
                                 left: Box::new(left),
                                 op: Asterisk,
-                                right: Box::new(Exp::Int(pointer_type_size(*p))),
+                                right: Box::new(Exp::Int(pointer_type_size(right_type))),
                             }),
                             op: op,
                             right: right,
