@@ -127,7 +127,7 @@ fn align_to(n: i32, align: i32) -> i32 {
     return (n + align - 1) / align * align;
 }
 
-fn get_locals_stmts(body: &Vec<Stmt>) -> i32 {
+fn get_stack_size_from_stmts(body: &Vec<Stmt>) -> i32 {
     let mut c = 0;
     for s in body {
         c += get_locals_stmt(s);
@@ -137,7 +137,7 @@ fn get_locals_stmts(body: &Vec<Stmt>) -> i32 {
 
 fn get_locals_stmt(stmt: &Stmt) -> i32 {
     match stmt {
-        Stmt::Block(ref stmts) => get_locals_stmts(stmts),
+        Stmt::Block(ref stmts) => get_stack_size_from_stmts(stmts),
         Stmt::If { cond, stmt1, stmt2 } => {
             let c2 = match **stmt2 {
                 Some(ref stmt) => get_locals_stmt(stmt),
@@ -157,18 +157,32 @@ fn get_locals_stmt(stmt: &Stmt) -> i32 {
             fun,
             params,
             body,
-        } => params.len() as i32 + get_locals_stmts(&body),
+        } => params.len() as i32 + get_stack_size_from_stmts(&body),
         Stmt::VarDec { t, var } => match t {
-            TypeDec::Int => 1,
-            _ => panic!("未対応 get_locals_stmt"),
+            TypeDec::Int => LOCAL_VAR_OFFSET,
+            TypeDec::Pointer(t) => LOCAL_POINTER_OFFSET,
         },
         _ => 0,
     }
 }
 
-fn get_stack_size<T>(params: &Vec<T>, body: &Vec<Stmt>) -> i32 {
-    let var_num = params.len() as i32 + get_locals_stmts(&body);
-    let stack_size = var_num * LOCAL_VAR_OFFSET;
+fn get_stack_size_from_params(params: &Vec<TypeAndExp>) -> i32 {
+    let mut sum = 0;
+    for (t, _) in params {
+        match t {
+            TypeDec::Pointer(_) => {
+                sum += LOCAL_POINTER_OFFSET;
+            }
+            TypeDec::Int => {
+                sum += LOCAL_VAR_OFFSET;
+            }
+        }
+    }
+    sum
+}
+
+fn get_stack_size(params: &Vec<TypeAndExp>, body: &Vec<Stmt>) -> i32 {
+    let stack_size = get_stack_size_from_params(params) as i32 + get_stack_size_from_stmts(&body);
     align_to(stack_size, RSP_CONST)
 }
 
